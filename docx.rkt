@@ -5,6 +5,6 @@
 
 (require "digitama/package.rkt")
 
-(define read-xlsx-package : (-> MOX-StdIn MOX-Package)
+(define read-docx-package : (-> MOX-StdIn MOX-Package)
   (lambda [/dev/stdin]
-    (mox-input-package /dev/stdin 'xlsx)))
+    (mox-input-package /dev/stdin 'docx)))

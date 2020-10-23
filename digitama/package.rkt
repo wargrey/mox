@@ -20,13 +20,13 @@
               #:utc-timestamps? Boolean)
              Void)])
 
-(define-type XLSX-StdIn (U String Path Bytes))
-(define-type XLSX-Package (HashTable Bytes (U XML-Document (-> Input-Port))))
+(define-type MOX-StdIn (U String Path Bytes))
+(define-type MOX-Package (HashTable Bytes (U XML-Document (-> Input-Port))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define xlsx-input-package : (-> XLSX-StdIn XLSX-Package)
-  (lambda [/dev/stdin]
-    (define package : XLSX-Package (make-hash))
+(define mox-input-package : (->* (MOX-StdIn) (Symbol) MOX-Package)
+  (lambda [/dev/stdin [ooxml 'xlsx]]
+    (define package : MOX-Package (make-hash))
     (define /dev/zipin : Input-Port
       (cond [(input-port? /dev/stdin) /dev/stdin]
             [(bytes? /dev/stdin) (open-input-file (bytes->path /dev/stdin))]
@@ -40,9 +40,9 @@
              (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/xlsxin))])
                (hash-set! package entry
                           (cond [(regexp-match? #px"[.][Xx][Mm][Ll]$" entry) (read-xml-document /dev/xlsxin)]
-                                [else (let ([xlsx::// (string->symbol (format "xlsx:///~a" entry))]
+                                [else (let ([ooxml::// (string->symbol (format "~a:///~a" ooxml entry))]
                                             [raw (port->bytes /dev/xlsxin)])
-                                        (procedure-rename (λ [] (open-input-bytes raw xlsx:://)) xlsx:://))])))))
+                                        (procedure-rename (λ [] (open-input-bytes raw ooxml:://)) ooxml:://))])))))
 
     (unless (eq? /dev/zipin /dev/stdin)
       (close-input-port /dev/zipin))
