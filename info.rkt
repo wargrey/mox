@@ -8,5 +8,5 @@
 
 (define scribblings '(["tamer/mox.scrbl" (main-doc multi-page) (parsing-library)]))
 
-(define deps '("base" "graphics" "typed-racket-lib" "typed-racket-more"))
+(define deps '("base" "w3s" "typed-racket-lib" "typed-racket-more"))
 (define build-deps '("scribble-lib" "racket-doc" "typed-racket-doc" "digimon" "graphics"))

@@ -1,4 +1,4 @@
-# Tamer's Handbook: mox
+# MOX: Open XML for Microsoft Office
 
 wargrey
 
