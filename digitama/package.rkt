@@ -26,13 +26,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct mox-content-type
   ([xmlns : String]
-   [extensions : (HashTable Bytes String)]
+   [extensions : (HashTable PRegexp String)]
    [parts : (HashTable Bytes String)])
   #:type-name MOX-Content-Type
   #:transparent)
 
+(struct mox-relationship
+  ()
+  #:type-name MOX-Relationship)
+
 (struct mox-package-head
-  ([types : MOX-Content-Type])
+  ([types : MOX-Content-Type]
+   [rels : MOX-Relationship])
   #:type-name MOX-Package-Head
   #:transparent)
 
@@ -45,7 +50,7 @@
   (lambda [/dev/stdin [ooxml 'xlsx]]
     (define documents : (HashTable Bytes (U XML-Document (-> Input-Port))) (make-hash))
     (define &type-xmlns : (Boxof String) (box ""))
-    (define extensions : (HashTable Bytes String) (make-hash))
+    (define extensions : (HashTable PRegexp String) (make-hash))
     (define parts : (HashTable Bytes String) (make-hash))
     
     (define /dev/zipin : Input-Port
@@ -57,26 +62,28 @@
            (λ [[entry : Bytes] [dir? : Boolean] [/dev/xlsxin : Input-Port] [timestamp : (Option Natural) #false]] : Any
              ;;; There is no folder in Office Open XML Package
              ;;; The input port must be read here, or `unzip` will keep waiting...
-             (displayln entry)
              (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/xlsxin))])
-               (define content : (U XML-Document (-> Input-Port))
+               (define body : (U XML-Document (-> Input-Port))
                  (cond [(regexp-match? #px"[.][Xx][Mm][Ll]$" entry) (read-xml-document /dev/xlsxin)]
-                                [else (let ([ooxml::// (string->symbol (format "~a:///~a" ooxml entry))]
-                                            [raw (port->bytes /dev/xlsxin)])
-                                        (procedure-rename (λ [] (open-input-bytes raw ooxml:://)) ooxml:://))]))
+                       [(regexp-match? #px"[.][Rr][Ee][Ll][Ss]$" entry) (read-xml-document /dev/xlsxin)]
+                       [else (let ([ooxml::// (string->symbol (format "~a:///~a" ooxml entry))]
+                                   [raw (port->bytes /dev/xlsxin)])
+                               (procedure-rename (λ [] (open-input-bytes raw ooxml:://)) ooxml:://))]))
 
 
-               (cond [(bytes=? entry #"[Content_Types].xml") (and (xml-document? content) (xml-extract-content-types content &type-xmlns extensions parts))]
-                     [else (hash-set! documents entry content)]))))
+               (cond [(bytes=? entry #"[Content_Types].xml") (and (xml-document? body) (xml-extract-content-types body &type-xmlns extensions parts))]
+                     [(bytes=? entry #"_rels/.rels") (and (xml-document? body) (xml-extract-content-types body &type-xmlns extensions parts))]
+                     [else (displayln entry) (hash-set! documents entry body)]))))
 
     (unless (eq? /dev/zipin /dev/stdin)
       (close-input-port /dev/zipin))
     
     (mox-package (mox-content-type (unbox &type-xmlns) extensions parts)
+                 (mox-relationship)
                  documents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define xml-extract-content-types : (-> XML-Document (Boxof String) (HashTable Bytes String) (HashTable Bytes String) Void)
+(define xml-extract-content-types : (-> XML-Document (Boxof String) (HashTable PRegexp String) (HashTable Bytes String) Void)
   (lambda [types.xml &xmlns extensions parts]
     (for ([types (in-list (xml-document-elements types.xml))])
       (when (and (list? types) (eq? (car types) 'Types))
@@ -94,7 +101,7 @@
               (define pn (assq 'PartName attrs))
 
               (when (pair? ext) ; Racket extension is dot-prefixed
-                (hash-set! extensions (string->bytes/utf-8 (string-append "." (assert (cdr ext) string?))) content-type))
+                (hash-set! extensions (pregexp (string-append "[.]" (assert (cdr ext) string?) "$")) content-type))
               
               (when (pair? pn) ; ZIP does not store items with leading '/'
                 (hash-set! parts (string->bytes/utf-8 (substring (assert (cdr pn) string?) 1)) content-type)))))))))
