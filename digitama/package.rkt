@@ -3,9 +3,11 @@
 (provide (all-defined-out))
 
 (require racket/port)
+(require racket/pretty)
+(require racket/symbol)
 
 (require sgml/digitama/document)
-(require sgml/digitama/plain/grammar)
+(require sgml/digitama/plain/sax)
 
 (require typed/racket/unsafe)
 
@@ -24,20 +26,31 @@
 (define-type MOX-StdIn (U String Path Bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(struct mox-content-type
+(struct mox-content-types
   ([xmlns : String]
-   [extensions : (HashTable PRegexp String)]
-   [parts : (HashTable Bytes String)])
-  #:type-name MOX-Content-Type
+   [extensions : (HashTable PRegexp Symbol)]
+   [parts : (HashTable Bytes Symbol)])
+  #:type-name MOX-Content-Types
   #:transparent)
 
 (struct mox-relationship
-  ()
-  #:type-name MOX-Relationship)
+  ([external? : Boolean]
+   [id : Symbol]
+   [target : Bytes]
+   [type : String])
+  #:type-name MOX-Relationship
+  #:transparent)
+
+(struct mox-relationships
+  ([xmlns : String]
+   [rels : (HashTable Bytes MOX-Relationship)])
+  #:type-name MOX-Relationships
+  #:transparent)
 
 (struct mox-package-head
-  ([types : MOX-Content-Type]
-   [rels : MOX-Relationship])
+  ([types : MOX-Content-Types]
+   [rels : MOX-Relationships]
+   [part-rels : (HashTable Bytes MOX-Relationships)])
   #:type-name MOX-Package-Head
   #:transparent)
 
@@ -49,9 +62,14 @@
 (define mox-input-package : (->* (MOX-StdIn) (Symbol) MOX-Package)
   (lambda [/dev/stdin [ooxml 'xlsx]]
     (define documents : (HashTable Bytes (U XML-Document (-> Input-Port))) (make-hash))
-    (define &type-xmlns : (Boxof String) (box ""))
-    (define extensions : (HashTable PRegexp String) (make-hash))
-    (define parts : (HashTable Bytes String) (make-hash))
+    
+    (define &types-xmlns : (Boxof String) (box ""))
+    (define extensions : (HashTable PRegexp Symbol) (make-hash))
+    (define parts : (HashTable Bytes Symbol) (make-hash))
+
+    (define &rels-xmlns : (Boxof String) (box ""))
+    (define relationships : (HashTable Bytes MOX-Relationship) (make-hash))
+    (define part-relationships : (HashTable Bytes MOX-Relationships) (make-hash))
     
     (define /dev/zipin : Input-Port
       (cond [(input-port? /dev/stdin) /dev/stdin]
@@ -59,49 +77,90 @@
             [else (open-input-file /dev/stdin)]))
 
     (unzip /dev/zipin
-           (λ [[entry : Bytes] [dir? : Boolean] [/dev/xlsxin : Input-Port] [timestamp : (Option Natural) #false]] : Any
+           (λ [[entry : Bytes] [dir? : Boolean] [/dev/pkgin : Input-Port] [timestamp : (Option Natural) #false]] : Any
              ;;; There is no folder in Office Open XML Package
              ;;; The input port must be read here, or `unzip` will keep waiting...
-             (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/xlsxin))])
-               (define body : (U XML-Document (-> Input-Port))
-                 (cond [(regexp-match? #px"[.][Xx][Mm][Ll]$" entry) (read-xml-document /dev/xlsxin)]
-                       [(regexp-match? #px"[.][Rr][Ee][Ll][Ss]$" entry) (read-xml-document /dev/xlsxin)]
-                       [else (let ([ooxml::// (string->symbol (format "~a:///~a" ooxml entry))]
-                                   [raw (port->bytes /dev/xlsxin)])
-                               (procedure-rename (λ [] (open-input-bytes raw ooxml:://)) ooxml:://))]))
-
-
-               (cond [(bytes=? entry #"[Content_Types].xml") (and (xml-document? body) (xml-extract-content-types body &type-xmlns extensions parts))]
-                     [(bytes=? entry #"_rels/.rels") (and (xml-document? body) (xml-extract-content-types body &type-xmlns extensions parts))]
-                     [else (displayln entry) (hash-set! documents entry body)]))))
+             (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/pkgin))])
+               (define type : Symbol (mox-part-type entry extensions parts))
+               
+               (displayln (cons /dev/pkgin (file-position /dev/pkgin)))
+               
+               (case type
+                 [(application/vnd.openxmlformats-package.types+xml)
+                  (read-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
+                 [(application/vnd.openxmlformats-package.relationships+xml)
+                  (cond [(bytes=? entry #"_rels/.rels") (read-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
+                        [else (let ([&xmlns : (Boxof String) (box "")]
+                                    [rels : (HashTable Bytes MOX-Relationship) (make-hash)]
+                                    [pentry : Bytes (regexp-replace* #px"[_.]rels($|[/])" entry #"")])
+                                (read-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
+                                (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
+                 [else (let ([stype (symbol->immutable-string type)])
+                         (hash-set! documents entry
+                                    (cond [(regexp-match? #px"[+]xml$" stype) (read-xml-document /dev/pkgin)]
+                                          [else (let ([ooxml::// (string->symbol (format "~a:///~a" ooxml entry))]
+                                                      [raw (port->bytes /dev/pkgin)])
+                                                  (procedure-rename (λ [] (open-input-bytes raw ooxml:://)) ooxml:://))])))]))))
 
     (unless (eq? /dev/zipin /dev/stdin)
       (close-input-port /dev/zipin))
     
-    (mox-package (mox-content-type (unbox &type-xmlns) extensions parts)
-                 (mox-relationship)
+    (mox-package (mox-content-types (unbox &types-xmlns) extensions parts)
+                 (mox-relationships (unbox &rels-xmlns) relationships)
+                 part-relationships
                  documents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define xml-extract-content-types : (-> XML-Document (Boxof String) (HashTable PRegexp String) (HashTable Bytes String) Void)
-  (lambda [types.xml &xmlns extensions parts]
-    (for ([types (in-list (xml-document-elements types.xml))])
-      (when (and (list? types) (eq? (car types) 'Types))
-        (define ?xmlns (assq 'xmlns (cadr types)))
-        (when (pair? ?xmlns) (set-box! &xmlns (assert (cdr ?xmlns) string?)))
+(define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable Bytes Symbol) XML-Event-Handler)
+  (lambda [&xmlns extensions parts]
+    ((inst make-xml-event-handler Void)
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
+                 (when (pair? attrs)
+                   (case element
+                     [(Default)
+                      (let ([ct (assq 'ContentType attrs)]
+                            [et (assq 'Extension attrs)])
+                        (when (and ct et) ; Extensions in Racket are dot-prefixed
+                          (let ([ext (pregexp (string-append "[.]" (assert (cdr et) string?) "$"))])
+                            (hash-set! extensions ext (string->symbol (assert (cdr ct) string?))))))]
+                     [(Override)
+                      (let ([ct (assq 'ContentType attrs)]
+                            [pn (assq 'PartName attrs)])
+                        (when (and ct pn) ; ZIP does not store items with leading '/'
+                          (let ([name (string->bytes/utf-8 (assert (cdr pn) string?) #false 1)])
+                            (hash-set! parts name (string->symbol (assert (cdr ct) string?))))))]
+                     [(Types)
+                      (let ([?xmlns (assq 'xmlns attrs)])
+                        (when (pair? ?xmlns)
+                          (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
 
-        (for ([type (in-list (caddr types))])
-          (when (list? type)
-            (define attrs : (Listof XML-Element-Attribute) (cadr type))
-            (define ct (assq 'ContentType attrs))
+(define make-relationships-sax-handler : (-> (Boxof String) (HashTable Bytes MOX-Relationship) XML-Event-Handler)
+  (lambda [&xmlns rels]
+    ((inst make-xml-event-handler Void)
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
+                 (when (pair? attrs)
+                   (case element
+                     [(Relationship)
+                      (let ([mode (assq 'TargetMode attrs)]
+                            [target (assq 'Target attrs)]
+                            [type (assq 'Type attrs)]
+                            [id (assq 'Id attrs)])
+                        (when (and target type id)
+                          (let ([t (string->bytes/utf-8 (assert (cdr target) string?))])
+                            (hash-set! rels t (mox-relationship (and mode (equal? (cdr mode) "External"))
+                                                                (string->symbol (assert (cdr id) string?))
+                                                                t
+                                                                (assert (cdr type) string?))))))]
+                     [(Relationships)
+                      (let ([?xmlns (assq 'xmlns attrs)])
+                        (when (pair? ?xmlns)
+                          (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
 
-            (unless (not ct)
-              (define content-type : String (assert (cdr ct) string?))
-              (define ext (assq 'Extension attrs))
-              (define pn (assq 'PartName attrs))
-
-              (when (pair? ext) ; Racket extension is dot-prefixed
-                (hash-set! extensions (pregexp (string-append "[.]" (assert (cdr ext) string?) "$")) content-type))
-              
-              (when (pair? pn) ; ZIP does not store items with leading '/'
-                (hash-set! parts (string->bytes/utf-8 (substring (assert (cdr pn) string?) 1)) content-type)))))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define mox-part-type : (-> Bytes (HashTable PRegexp Symbol) (HashTable Bytes Symbol) Symbol)
+  (lambda [entry extensions parts]
+    (hash-ref parts entry
+              (λ [] (or (for/or : (Option Symbol) ([(px.ext type) (in-hash extensions)])
+                          (and (regexp-match? px.ext entry) type))
+                        (cond [(bytes=? entry #"[Content_Types].xml") 'application/vnd.openxmlformats-package.types+xml]
+                              [else '||]))))))
