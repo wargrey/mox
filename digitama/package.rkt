@@ -7,6 +7,7 @@
 (require racket/symbol)
 
 (require sgml/digitama/document)
+(require sgml/digitama/namespace)
 (require sgml/digitama/plain/sax)
 
 (require typed/racket/unsafe)
@@ -26,6 +27,8 @@
 (define-type MOX-StdIn (U String Path Bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-type MOX-File-Properties (HashTable Symbol String))
+
 (struct mox-content-types
   ([xmlns : String]
    [extensions : (HashTable PRegexp Symbol)]
@@ -50,7 +53,8 @@
 (struct mox-package-head
   ([types : MOX-Content-Types]
    [rels : MOX-Relationships]
-   [part-rels : (HashTable Bytes MOX-Relationships)])
+   [part-rels : (HashTable Bytes MOX-Relationships)]
+   [cores : MOX-File-Properties])
   #:type-name MOX-Package-Head
   #:transparent)
 
@@ -70,6 +74,8 @@
     (define &rels-xmlns : (Boxof String) (box ""))
     (define relationships : (HashTable Bytes MOX-Relationship) (make-hash))
     (define part-relationships : (HashTable Bytes MOX-Relationships) (make-hash))
+
+    (define core-properties : MOX-File-Properties (make-hasheq))
     
     (define /dev/zipin : Input-Port
       (cond [(input-port? /dev/stdin) /dev/stdin]
@@ -83,7 +89,7 @@
              (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/pkgin))])
                (define type : Symbol (mox-part-type entry extensions parts))
                
-               (displayln (cons /dev/pkgin (file-position /dev/pkgin)))
+               (displayln (list entry type))
                
                (case type
                  [(application/vnd.openxmlformats-package.types+xml)
@@ -95,6 +101,8 @@
                                     [pentry : Bytes (regexp-replace* #px"[_.]rels($|[/])" entry #"")])
                                 (read-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
                                 (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
+                 [(application/vnd.openxmlformats-package.core-properties+xml)
+                  (read-xml-datum /dev/pkgin (make-core-properties-sax-handler core-properties))]
                  [else (let ([stype (symbol->immutable-string type)])
                          (hash-set! documents entry
                                     (cond [(regexp-match? #px"[+]xml$" stype) (read-xml-document /dev/pkgin)]
@@ -108,6 +116,7 @@
     (mox-package (mox-content-types (unbox &types-xmlns) extensions parts)
                  (mox-relationships (unbox &rels-xmlns) relationships)
                  part-relationships
+                 core-properties
                  documents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,6 +164,10 @@
                       (let ([?xmlns (assq 'xmlns attrs)])
                         (when (pair? ?xmlns)
                           (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
+
+(define make-core-properties-sax-handler : (-> MOX-File-Properties XML-Event-Handler)
+  (lambda [metainfo]
+    ((inst make-xml-event-handler Void))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-part-type : (-> Bytes (HashTable PRegexp Symbol) (HashTable Bytes Symbol) Symbol)
