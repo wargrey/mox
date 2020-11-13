@@ -93,16 +93,16 @@
                
                (case type
                  [(application/vnd.openxmlformats-package.types+xml)
-                  (read-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
+                  (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
                  [(application/vnd.openxmlformats-package.relationships+xml)
-                  (cond [(bytes=? entry #"_rels/.rels") (read-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
+                  (cond [(bytes=? entry #"_rels/.rels") (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
                         [else (let ([&xmlns : (Boxof String) (box "")]
                                     [rels : (HashTable Bytes MOX-Relationship) (make-hash)]
                                     [pentry : Bytes (regexp-replace* #px"[_.]rels($|[/])" entry #"")])
-                                (read-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
+                                (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
                                 (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
                  [(application/vnd.openxmlformats-package.core-properties+xml)
-                  (read-xml-datum /dev/pkgin (make-core-properties-sax-handler core-properties))]
+                  (load-xml-datum /dev/pkgin (make-core-properties-sax-handler core-properties))]
                  [else (let ([stype (symbol->immutable-string type)])
                          (hash-set! documents entry
                                     (cond [(regexp-match? #px"[+]xml$" stype) (read-xml-document /dev/pkgin)]
