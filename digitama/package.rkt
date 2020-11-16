@@ -3,7 +3,6 @@
 (provide (all-defined-out))
 
 (require racket/port)
-(require racket/pretty)
 (require racket/symbol)
 
 (require sgml/digitama/document)
@@ -37,24 +36,39 @@
   #:transparent)
 
 (struct mox-relationship
-  ([external? : Boolean]
-   [id : Symbol]
+  ([id : Symbol]
    [target : Bytes]
-   [type : String])
+   [type : String]
+   [external? : Boolean])
   #:type-name MOX-Relationship
   #:transparent)
 
 (struct mox-relationships
   ([xmlns : String]
-   [rels : (HashTable Bytes MOX-Relationship)])
+   [rels : (HashTable Symbol MOX-Relationship)])
   #:type-name MOX-Relationships
+  #:transparent)
+
+(struct mox-custom-property
+  ([name : Symbol]
+   [type : Symbol]
+   [value : String]
+   [attributes : (Immutable-HashTable Symbol String)])
+  #:type-name MOX-Custom-Property
+  #:transparent)
+
+(struct mox-custom-properties
+  ([xmlns : String]
+   [cprops : (HashTable Symbol MOX-Custom-Property)])
+  #:type-name MOX-Custom-Properties
   #:transparent)
 
 (struct mox-package-head
   ([types : MOX-Content-Types]
    [rels : MOX-Relationships]
    [part-rels : (HashTable Bytes MOX-Relationships)]
-   [cores : MOX-File-Properties])
+   [properties : MOX-File-Properties]
+   [custom : (Option MOX-Custom-Properties)])
   #:type-name MOX-Package-Head
   #:transparent)
 
@@ -72,10 +86,12 @@
     (define parts : (HashTable Bytes Symbol) (make-hash))
 
     (define &rels-xmlns : (Boxof String) (box ""))
-    (define relationships : (HashTable Bytes MOX-Relationship) (make-hash))
+    (define relationships : (HashTable Symbol MOX-Relationship) (make-hasheq))
     (define part-relationships : (HashTable Bytes MOX-Relationships) (make-hash))
 
-    (define core-properties : MOX-File-Properties (make-hasheq))
+    (define &cprops-xmlns : (Boxof (Option String)) (box #false))
+    (define file-properties : MOX-File-Properties (make-hasheq))
+    (define custom-properties : (HashTable Symbol MOX-Custom-Property) (make-hasheq))
     
     (define /dev/zipin : Input-Port
       (cond [(input-port? /dev/stdin) /dev/stdin]
@@ -89,20 +105,20 @@
              (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/pkgin))])
                (define type : Symbol (mox-part-type entry extensions parts))
                
-               (displayln (list entry type))
-               
                (case type
                  [(application/vnd.openxmlformats-package.types+xml)
                   (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
                  [(application/vnd.openxmlformats-package.relationships+xml)
                   (cond [(bytes=? entry #"_rels/.rels") (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
                         [else (let ([&xmlns : (Boxof String) (box "")]
-                                    [rels : (HashTable Bytes MOX-Relationship) (make-hash)]
+                                    [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
                                     [pentry : Bytes (regexp-replace* #px"[_.]rels($|[/])" entry #"")])
                                 (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
                                 (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
-                 [(application/vnd.openxmlformats-package.core-properties+xml)
-                  (load-xml-datum /dev/pkgin (make-core-properties-sax-handler core-properties))]
+                 [(application/vnd.openxmlformats-package.core-properties+xml application/vnd.openxmlformats-officedocument.extended-properties+xml)
+                  (load-xml-datum /dev/pkgin (make-file-properties-sax-handler file-properties))]
+                 [(application/vnd.openxmlformats-officedocument.custom-properties+xml)
+                  (load-xml-datum /dev/pkgin (make-custom-properties-sax-handler &cprops-xmlns custom-properties))]
                  [else (let ([stype (symbol->immutable-string type)])
                          (hash-set! documents entry
                                     (cond [(regexp-match? #px"[+]xml$" stype) (read-xml-document /dev/pkgin)]
@@ -116,7 +132,10 @@
     (mox-package (mox-content-types (unbox &types-xmlns) extensions parts)
                  (mox-relationships (unbox &rels-xmlns) relationships)
                  part-relationships
-                 core-properties
+                 file-properties
+                 (let ([vt (unbox &cprops-xmlns)])
+                   (and (string? vt)
+                        (mox-custom-properties vt custom-properties)))
                  documents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -143,7 +162,7 @@
                         (when (pair? ?xmlns)
                           (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
 
-(define make-relationships-sax-handler : (-> (Boxof String) (HashTable Bytes MOX-Relationship) XML-Event-Handler)
+(define make-relationships-sax-handler : (-> (Boxof String) (HashTable Symbol MOX-Relationship) XML-Event-Handler)
   (lambda [&xmlns rels]
     ((inst make-xml-event-handler Void)
      #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
@@ -153,21 +172,55 @@
                       (let ([mode (assq 'TargetMode attrs)]
                             [target (assq 'Target attrs)]
                             [type (assq 'Type attrs)]
-                            [id (assq 'Id attrs)])
-                        (when (and target type id)
-                          (let ([t (string->bytes/utf-8 (assert (cdr target) string?))])
-                            (hash-set! rels t (mox-relationship (and mode (equal? (cdr mode) "External"))
-                                                                (string->symbol (assert (cdr id) string?))
-                                                                t
-                                                                (assert (cdr type) string?))))))]
+                            [Id (assq 'Id attrs)])
+                        (when (and target type Id)
+                          (let ([id (string->symbol (assert (cdr Id) string?))])
+                            (hash-set! rels id (mox-relationship id
+                                                                 (string->bytes/utf-8 (assert (cdr target) string?))
+                                                                 (assert (cdr type) string?)
+                                                                 (and mode (equal? (cdr mode) "External")))))))]
                      [(Relationships)
                       (let ([?xmlns (assq 'xmlns attrs)])
                         (when (pair? ?xmlns)
                           (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
 
-(define make-core-properties-sax-handler : (-> MOX-File-Properties XML-Event-Handler)
+(define make-file-properties-sax-handler : (-> MOX-File-Properties XML-Event-Handler)
   (lambda [metainfo]
-    ((inst make-xml-event-handler Void))))
+    ((inst make-xml-event-handler Void)
+     #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [cdata? : Boolean] [_ : Void]] : Void
+                (let-values ([(ns name) (xml-qname-split element)])
+                  (hash-set! metainfo name pcdata))))))
+
+(define make-custom-properties-sax-handler : (-> (Boxof (Option String)) (HashTable Symbol MOX-Custom-Property) (XML-Event-Handlerof CustomAttributes))
+  (lambda [&xmlns properties]
+    ((inst make-xml-event-handler CustomAttributes)
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : CustomAttributes]] : CustomAttributes
+                 (displayln element)
+                 (when (pair? attrs)
+                   (case element
+                     [(Properties)
+                      (for ([attr (in-list attrs)])
+                        (define-values (ns name) (xml-qname-split (car attr)))
+                        
+                        (when (eq? ns 'xmlns)
+                          (set-box! &xmlns (assert (cdr attr) string?))))]
+                     [(Property)
+                      (let ([name.value (assq 'name attrs)])
+                        (when (pair? name.value)
+                          (cons (string->symbol (assert (cdr name.value) string?))
+                                (for/hasheq : (Immutable-HashTable Symbol String)
+                                  ([attr (in-list attrs)] #:when (not (eq? (car attr) 'name)))
+                                  (let ([v (cdr attr)])
+                                    (cond [(string? v) (values (car attr) v)]
+                                          [else (values (car attr) (unbox v))]))))))])))
+     #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [cdata? : Boolean] [name.attrs : CustomAttributes]] : CustomAttributes
+                (displayln name.attrs)
+                (when (pair? name.attrs)
+                  (let-values ([(name) (car name.attrs)]
+                               [(ns type) (xml-qname-split element)])
+                    (hash-set! properties name
+                               (mox-custom-property name type
+                                                    pcdata (cdr name.attrs)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-part-type : (-> Bytes (HashTable PRegexp Symbol) (HashTable Bytes Symbol) Symbol)
@@ -177,3 +230,6 @@
                           (and (regexp-match? px.ext entry) type))
                         (cond [(bytes=? entry #"[Content_Types].xml") 'application/vnd.openxmlformats-package.types+xml]
                               [else '||]))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-type CustomAttributes (U Void (Pairof Symbol (Immutable-HashTable Symbol String))))
