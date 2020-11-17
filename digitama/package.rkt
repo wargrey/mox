@@ -59,7 +59,8 @@
   #:transparent)
 
 (struct mox.ml mox.zip
-  ([shared : MOXML])
+  ([shared : MOX-SharedML]
+   [x : MOXML])
   #:type-name MOX.Part)
 
 (struct mox-package mox.ml
@@ -121,6 +122,7 @@
                  (mox-relationships (unbox &rels-xmlns) relationships)
                  part-relationships
                  (shared-realize)
+                 (mox-realize)
                  orphans)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
