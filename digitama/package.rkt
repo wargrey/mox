@@ -5,8 +5,6 @@
 (require racket/port)
 (require racket/symbol)
 
-(require sgml/digitama/document)
-(require sgml/digitama/namespace)
 (require sgml/digitama/plain/sax)
 
 (require typed/racket/unsafe)
@@ -60,20 +58,21 @@
 
 (struct mox.ml mox.zip
   ([shared : MOX-SharedML]
-   [x : MOXML])
-  #:type-name MOX.Part)
+   [document : MOXML])
+  #:type-name MOX.ML
+  #:transparent)
 
 (struct mox-package mox.ml
-  ([orphans : (HashTable Bytes (U XML-Document (-> Input-Port)))])
+  ([orphans : (HashTable Bytes (Pairof Symbol (-> Input-Port)))])
   #:type-name MOX-Package)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof x) MOX-Package)
+(define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package)
   (lambda [/dev/stdin mox-agent]
     (define-values (_ shared-unzip shared-realize) (moxml-sharedml-agent))
     (define-values (ooxml mox-unzip mox-realize) (mox-agent))
 
-    (define orphans : (HashTable Bytes (U XML-Document (-> Input-Port))) (make-hash))
+    (define orphans : (HashTable Bytes (Pairof Symbol (-> Input-Port))) (make-hash))
     
     (define &types-xmlns : (Boxof String) (box ""))
     (define extensions : (HashTable PRegexp Symbol) (make-hash))
@@ -110,10 +109,11 @@
                                     (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
                      [else (let ([stype (symbol->immutable-string type)])
                              (hash-set! orphans entry
-                                        (cond [(regexp-match? #px"[+]xml$" stype) (read-xml-document /dev/pkgin)]
-                                              [else (let ([ooxml::// (string->symbol (format "~a:///~a" ooxml entry))]
-                                                          [raw (port->bytes /dev/pkgin)])
-                                                      (procedure-rename (λ [] (open-input-bytes raw ooxml:://)) ooxml:://))])))])))))
+                                        (let ([ooxml::// (format "~a:///~a" ooxml entry)]
+                                              [raw (port->bytes /dev/pkgin)])
+                                          (cons type
+                                                (procedure-rename (λ [] (open-input-bytes raw ooxml:://))
+                                                                  (string->symbol ooxml:://))))))])))))
 
     (unless (eq? /dev/zipin /dev/stdin)
       (close-input-port /dev/zipin))

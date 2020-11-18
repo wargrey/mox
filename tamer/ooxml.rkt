@@ -3,19 +3,26 @@
 (provide (all-defined-out))
 (provide (all-from-out "../docx.rkt"))
 (provide (all-from-out "../xlsx.rkt"))
-(provide (all-from-out racket/logging racket/path racket/port racket/pretty))
+(provide (all-from-out racket/logging racket/file racket/path racket/port racket/pretty))
 
 (require "../docx.rkt")
 (require "../xlsx.rkt")
 
+(require racket/logging)
+(require racket/file)
 (require racket/path)
 (require racket/port)
-(require racket/logging)
 (require racket/pretty)
 
 (require (for-syntax racket/base))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-syntax ($1 stx)
+  #'(let ([argv (current-command-line-arguments)])
+      (cond [(and (list? argv) (pair? argv)) (car argv)]
+            [(> (vector-length argv) 0) (vector-ref argv 0)]
+            [else #false])))
+
 (define-syntax (#%dir stx)
   #'(let ([rmp (variable-reference->resolved-module-path (#%variable-reference))])
       (cond [(not rmp) (current-directory)]
