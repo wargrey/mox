@@ -38,7 +38,7 @@
 (struct mox-relationship
   ([id : Symbol]
    [target : Bytes]
-   [type : String]
+   [type : Symbol]
    [external? : Boolean])
   #:type-name MOX-Relationship
   #:transparent)
@@ -53,8 +53,7 @@
   ([types : MOX-Content-Types]
    [rels : MOX-Relationships]
    [part-rels : (HashTable Bytes MOX-Relationships)])
-  #:type-name MOX.ZIP
-  #:transparent)
+  #:type-name MOX.ZIP)
 
 (struct mox.ml mox.zip
   ([shared : MOX-SharedML]
@@ -94,8 +93,8 @@
              (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/pkgin))])
                (define type : Symbol (mox-part-type entry extensions parts))
                
-               (or (mox-unzip entry dir? /dev/pkgin type timestamp)
-                   (shared-unzip entry dir? /dev/pkgin type timestamp)
+               (or (mox-unzip entry type /dev/pkgin)
+                   (shared-unzip entry type /dev/pkgin)
 
                    (case type
                      [(application/vnd.openxmlformats-package.types+xml)
@@ -164,7 +163,7 @@
                           (let ([id (string->symbol (assert (cdr Id) string?))])
                             (hash-set! rels id (mox-relationship id
                                                                  (string->bytes/utf-8 (assert (cdr target) string?))
-                                                                 (assert (cdr type) string?)
+                                                                 (string->symbol (assert (cdr type) string?))
                                                                  (and mode (equal? (cdr mode) "External")))))))]
                      [(Relationships)
                       (let ([?xmlns (assq 'xmlns attrs)])

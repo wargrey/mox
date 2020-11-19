@@ -42,3 +42,7 @@
             [else (let ([full (resolved-module-path-name rmp)])
                     (cond [(path? full) (path-replace-extension full #".xlsx")]
                           [else (current-directory)]))])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(pretty-print-columns 160)
+[global-port-print-handler pretty-print]

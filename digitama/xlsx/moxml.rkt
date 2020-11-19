@@ -14,7 +14,7 @@
   (lambda []
     (values 'xlsx
 
-            (λ [[entry : Bytes] [dir? : Boolean] [/dev/pkgin : Input-Port] [type : Symbol] [timestamp : (Option Natural) #false]] : (Option Void)
+            (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               #false)
 
             (λ [] : MOX-Excel
