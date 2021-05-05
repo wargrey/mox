@@ -18,6 +18,7 @@
 (require digimon/digivice/wisemon/phony/typeset)
 
 (require "../format.rkt")
+(require "../../../digitama/scribble/docx/metainfo.rkt")
 
 (require/typed
  digimon/digitama/tamer
@@ -28,7 +29,7 @@
   (lambda [info-ref]
     (for/list : Wisemon-Specification ([typesetting (in-list (find-digimon-typesettings info-ref #true))])
       (define-values (docx.scrbl maybe-name regexps) (values (car typesetting) (caddr typesetting) (cadddr typesetting)))
-      (define mox.docx : Path (assert (tex-document-destination docx.scrbl #true #:extension #".docx")))
+      (define mox.docx : Path (assert (tex-document-destination docx.scrbl #true #:extension docx-suffix)))
       
       (wisemon-spec mox.docx #:^ (filter file-exists? (tex-smart-dependencies docx.scrbl)) #:-
                     (define pwd : Path (assert (path-only mox.docx)))
@@ -40,11 +41,11 @@
                                    [current-namespace (make-base-namespace)]
                                    [exit-handler (λ _ (error the-name "~a ~a: [fatal] ~a needs a proper `exit-handler`!"
                                                              the-name (current-make-phony-goal) ./docx))])
-                      (eval '(require (prefix-in markdown: scribble/markdown-render) setup/xref scribble/render))
-                      (eval `(define (markdown:render docx.scrbl #:dest-dir dest-dir)
-                               (render #:dest-dir dest-dir #:render-mixin markdown:render-mixin
+                      (eval '(require (prefix-in docx: mox/digitama/scribble/docx) setup/xref scribble/render))
+                      (eval `(define (docx:render docx.scrbl #:dest-dir dest-dir)
+                               (render #:dest-dir dest-dir #:render-mixin docx:render-mixin
                                        (list (dynamic-require docx.scrbl 'doc)) (list ,mox.docx))))
-                      (fg-recon-eval 'docx `(markdown:render ,docx.scrbl #:dest-dir ,(path-only mox.docx))))))))
+                      (fg-recon-eval 'docx `(docx:render ,docx.scrbl #:dest-dir ,(path-only mox.docx))))))))
 
 (define make~docx : MOX-Render
   (lambda [digimon info-ref]

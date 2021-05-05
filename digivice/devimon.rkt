@@ -12,6 +12,7 @@
 (require digimon/cmdopt)
 (require digimon/debug)
 (require digimon/system)
+(require digimon/port)
 
 (require "devimon/format.rkt")
 
@@ -21,8 +22,19 @@
   #:args formats丨file-path
 
   #:once-each
-  [[(#\d debug)               #:=> make-trace-log                        "Print lots of debug information"]
-   [(#\v verbose)             #:=> make-set-verbose!                     "Build with verbose messages"]])
+  [[(#\B always-make)         #:=> make-always-run                       "Unconditionally re-render all documents"]
+   [(#\i ignore-errors)       #:=> (λ _ (make-errno 0))                  "Do not tell shell there are errors"]
+   [(#\n dry-run recon)       #:=> make-dry-run                          "Don't actually run any commands; just print them [Except *.rkt]"]
+   [(#\s slient quiet)        #:=> (λ _ (current-output-port /dev/null)) "Just render and only display errors"]
+   [(#\t touch)               #:=> make-just-touch                       "Touch targets instead of re-rendering them if existed"]
+   [(#\d debug)               #:=> make-trace-log                        "Print lots of debug information"]
+   [(#\v verbose)             #:=> make-set-verbose!                     "Render with verbose messages"]
+   [(#\k keep-going)          #:=> make-keep-going                       "Keep going when some targets cannot be rendered"]
+   [(#\j jobs)                #:=> cmdopt-string->byte n #: Byte         ["Allow ~1 jobs at once [0 for default: ~a]" (parallel-workers)]]]
+  
+  #:multi
+  [[(#\W new-file assume-new) #:=> cmdopt-string->path FILE #: Path      "Consider ~1 to be infinitely new"]
+   [(#\o old-file assume-old) #:=> cmdopt-string->path FILE #: Path      "Consider ~1 to be infinitely old and do not remaking them"]])
 
 (define devimon-display-help : (->* () ((Option Byte)) Void)
   (lambda [[retcode 0]]
@@ -80,6 +92,13 @@
 
     (when (devimon-flags-help? options)
       (devimon-display-help))
+
+    (let ([jobs (devimon-flags-jobs options)])
+      (when (and jobs (> jobs 0))
+        (parallel-workers jobs)))
+
+    (make-assume-oldfiles (devimon-flags-old-file options))
+    (make-assume-newfiles (devimon-flags-new-file options))
 
     (parameterize ([current-logger /dev/dtrace])
       (define digimons (collection-info))
