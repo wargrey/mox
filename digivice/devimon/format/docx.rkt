@@ -3,7 +3,6 @@
 (provide (all-defined-out))
 
 (require racket/path)
-(require racket/list)
 
 (require digimon/dtrace)
 
@@ -19,10 +18,6 @@
 
 (require "../format.rkt")
 (require "../../../digitama/scribble/docx/metainfo.rkt")
-
-(require/typed
- digimon/digitama/tamer
- [handbook-metainfo (-> Path-String String (Values String String))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define make-docx-specs : (-> Info-Ref Wisemon-Specification)

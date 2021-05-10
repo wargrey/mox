@@ -48,17 +48,18 @@
                            #:exit retcode)))
 
 (define devimon-format-partition : (-> (Listof String) (Values (Pairof MOX-Format (Listof MOX-Format)) (Listof Path)))
-  (lambda [goals]
-    (define-values (seinohp slaer)
-      (for/fold ([seinohp : (Listof MOX-Format) null]
-                 [slaer : (Listof Path) null])
-                ([g (in-list goals)])
-        (cond [(path-get-extension g) (values seinohp (cons (simple-form-path g) slaer))]
-              [(mox-format-ref (string->symbol g)) => (λ [[p : MOX-Format]] (values (cons p seinohp) slaer))]
-              [else (values seinohp (cons (simple-form-path g) slaer))])))
-    (let ([phonies (reverse seinohp)])
-      (values (if (pair? phonies) phonies (list (assert (mox-format-ref 'all))))
-              (reverse slaer)))))
+  (lambda [args]
+    (define-values (stamrof selif)
+      (for/fold ([stamrof : (Listof MOX-Format) null]
+                 [selif : (Listof Path) null])
+                ([g (in-list args)])
+        (cond [(path-get-extension g) (values stamrof (cons (simple-form-path g) selif))]
+              [(mox-format-ref (string->symbol g)) => (λ [[p : MOX-Format]] (values (cons p stamrof) selif))]
+              [else (values stamrof (cons (simple-form-path g) selif))])))
+
+    (let ([formats (reverse stamrof)])
+      (values (if (pair? formats) formats (list (assert (mox-format-ref 'docx))))
+              (reverse selif)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define render-digimon : (-> (U Pkg-Info (Pairof Info-Ref (Listof Pkg-Info))) (Listof Path) (Pairof MOX-Format (Listof MOX-Format)) Byte)

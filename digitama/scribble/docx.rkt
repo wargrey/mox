@@ -9,7 +9,7 @@
 (require racket/list)
 (require racket/string)
 
-(require scribble/text/wrap)
+(require digimon/dtrace)
 
 (require "docx/metainfo.rkt")
 
@@ -55,6 +55,7 @@
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (define/override (render-part d ht)
+      (dtrace-debug "~a" d)
       (let ([number (collected-info-number (part-collected-info d ht))])
         (unless (part-style? d 'hidden)
           (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
@@ -195,7 +196,7 @@
          (define to-wrap (regexp-replaces (get-output-string o)
                                           '([#rx"\n" " "]   ;1
                                             [#rx"``" ""]))) ;2
-         (define lines (wrap-line (string-trim to-wrap) (- 72 (current-indent))))
+         (define lines (list (string-trim to-wrap)))
          (write-note)
          (write-string (car lines))
          (for ([line (in-list (cdr lines))])

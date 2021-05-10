@@ -1,0 +1,40 @@
+#lang typed/racket/base
+
+;;; OpenPackagingConventions - Standard Namespaces and Content Types
+
+(provide (all-defined-out))
+
+(require digimon/iana)
+
+(require racket/symbol)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define opc-xmlns : (-> Symbol (Option String))
+  (lambda [part]
+    (case part
+      [(Types)         "http://schemas.openxmlformats.org/package/2006/content-types"]
+      [(Core)          "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"]
+      [(Signatures)    "http://schemas.openxmlformats.org/package/2006/digital-signature"]
+      [(Relationships) "http://schemas.openxmlformats.org/package/2006/relationships"]
+      [(Compatibility) "http://schemas.openxmlformats.org/markup-compatibility/2006"]
+      [else #false])))
+
+(define opc-relationship-type : (-> (U String Symbol) String)
+  (lambda [type]
+    (cond [(string? type) type]
+          [else (case type
+                  [(Thumbnail)     "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail"]
+                  [(Core)          "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"]
+                  [(Certificate)   "http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/certificate"]
+                  [(Signature)     "http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin"]
+                  [else (symbol->immutable-string type)])])))
+
+(define opc-type-name : (-> Symbol (Option Symbol))
+  (lambda [ext]
+    (case ext
+      [(rels) 'application/vnd.openxmlformats-package.relationships+xml]
+      [(core) 'application/vnd.openxmlformats-package.core-properties+xml]
+      [(cert) 'application/vnd.openxmlformats-package.digital-signature-certificate]
+      [(osig) 'application/vnd.openxmlformats-package.digital-signature-origin]
+      [(xsig) 'application/vnd.openxmlformats-package.digital-signature-xmlsignature+xml]
+      [else (iana-media-type-ref ext)])))
