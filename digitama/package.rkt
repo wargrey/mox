@@ -126,6 +126,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable Bytes Symbol) XML-Event-Handler)
+  ;;; OpenPackagingConventions 9.1.2.2
+  ; For file readers, if an element matches both Default and Override, Override takes precedence. 
   (lambda [&xmlns extensions parts]
     ((inst make-xml-event-handler Void)
      #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
