@@ -14,8 +14,8 @@
 (require "standards.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define opc-content-types-markup-entry : (->* () ((Listof Symbol) (Listof (Pairof String Symbol)) #:utc Integer) Archive-Entry)
-  (lambda [[defaults null] [overrides null] #:utc [ts #false]]
+(define opc-content-types-markup-entry : (->* () ((Listof (Pairof String Symbol)) (Listof Symbol) #:utc Integer) Archive-Entry)
+  (lambda [[overrides null] [defaults null] #:utc [ts #false]]
     (define content-type : Xexpr
       (list 'Types `([xmlns . ,(assert (opc-xmlns 'Types))])
             (append (filter-map opc-type->default (remove-duplicates (list* 'xml 'rels defaults)))
@@ -23,7 +23,7 @@
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 9.1.2.2, 2006"
                               (xexpr->bytes content-type #:prolog? #true)
-                              (opc-part-name-normalize "[Content_Types].xml"))))
+                              (opc-part-name-normalize/zip "/[Content_Types].xml"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-type->default : (-> Symbol (Option Xexpr))
@@ -36,7 +36,7 @@
 
 (define opc-type->override : (-> (Pairof String Symbol) (Option Xexpr))
   (lambda [t]
-    (define content-type : (Option Symbol) (opc-type-name (cdr t)))
+    (define content-type : (Option Symbol) (opc-override-type-name (cdr t)))
     
     (and content-type
          `(Override ([PartName . ,(opc-part-name-normalize (car t))]

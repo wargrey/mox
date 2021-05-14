@@ -4,10 +4,9 @@
 
 (require digimon/archive)
 
-(require sgml/xml)
+(require sgml/xexpr)
 
 (require racket/symbol)
-(require racket/list)
 
 (require "partname.rkt")
 (require "standards.rkt")
@@ -32,12 +31,12 @@
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 8.3.3.1, 2006"
                               (xexpr->bytes relationships #:prolog? #true)
-                              (opc-part-name-normalize partname))))
+                              (opc-part-name-normalize/zip partname))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-relation-element->relationship : (-> OPC-Relationship Xexpr)
   (lambda [elem]
-    `(Relationship ([id         . ,(symbol->immutable-string (car elem))]
-                    [Target     . ,(cadr elem)]
+    `(Relationship ([Id         . ,(symbol->immutable-string (car elem))]
+                    [Target     . ,(opc-part-name-normalize/zip (cadr elem))]
                     [Type       . ,(caddr elem)]
                     [TargetMode . ,(if (cadddr elem) "External" "Internal")]))))

@@ -9,9 +9,14 @@
 (require racket/list)
 (require racket/string)
 
+(require digimon/archive)
 (require digimon/dtrace)
 
 (require "docx/metainfo.rkt")
+(require "docx/document.rkt")
+
+(require "package/content.type.rkt")
+(require "package/relationship.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define current-docx-link-sections (make-parameter #f))
@@ -55,34 +60,55 @@
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (define/override (render-part d ht)
-      (dtrace-debug "~a" d)
-      (let ([number (collected-info-number (part-collected-info d ht))])
-        (unless (part-style? d 'hidden)
-          (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
-          
-          (let ([s (format-number number '() #t)])
-            (unless (null? s)
-              (printf "~a~a" 
-                      (car s)
-                      (if (part-title-content d)
-                          " "
-                          "")))
-            (when (part-title-content d)
-              (render-content (part-title-content d) d ht))
-            
-            (when (or (pair? number) (part-title-content d))
-              (newline)
-              (newline))))
-        
-        (render-flow (part-blocks d) d ht #f)
+      (define number (collected-info-number (part-collected-info d ht)))
+      (define title-content (part-title-content d))
+      (define sname (style-name (part-style d)))
+      (define sproperties (style-properties (part-style d)))
+     
+      (unless (not title-content)
+        (dtrace-debug "part: [~a] ~a"
+                      (add1 (number-depth number))
+                      (content->string title-content)))
 
-        (let loop ([pos 1]
-                   [secs (part-parts d)]
-                   [need-newline? (pair? (part-blocks d))])
-          (unless (null? secs)
-            (when need-newline? (newline))
-            (render-part (car secs) ht)
-            (loop (add1 pos) (cdr secs) #t)))))
+      (dtrace-debug "  style: ~a" sname)
+      (for ([p (in-list sproperties)])
+        (dtrace-debug "    ~a" p))
+      
+      #;(unless (part-style? d 'hidden)
+        (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
+        
+        (let ([s (format-number number '() #t)])
+          (unless (null? s)
+            (printf "~a~a" 
+                    (car s)
+                    (if title-content
+                        " "
+                        "")))
+          (unless (not title-content)
+            (render-content title-content d ht))
+          
+          (when (or (pair? number) title-content)
+            (newline)
+            (newline))))
+      
+      #;(render-flow (part-blocks d) d ht #f)
+      
+      #;(let loop ([pos 1]
+                 [secs (part-parts d)]
+                 [need-newline? (pair? (part-blocks d))])
+        (unless (null? secs)
+          (when need-newline? (newline))
+          (render-part (car secs) ht)
+          (loop (add1 pos) (cdr secs) #t)))
+
+      (zip-create #:strategy 'fixed
+                  (current-output-port)
+                  (let ([main-part-name "/word/document.xml"])
+                    (list (opc-content-types-markup-entry
+                           (list (cons main-part-name 'document.xml)))
+                          (opc-relationships-markup-entry
+                           "/_rels/.rels" (list (opc-make-internal-relationship 'rId1 main-part-name 'document.xml)))
+                          (opc-word-document-markup-entry main-part-name)))))
 
     (define/override (render-flow f part ht starting-item?)
       (if (null? f)
