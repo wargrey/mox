@@ -3,7 +3,7 @@
 (provide (all-defined-out))
 
 (require scribble/core)
-(require scribble/private/render-utils)
+(require scribble/html-properties)
 
 (require racket/class)
 (require racket/list)
@@ -62,17 +62,30 @@
     (define/override (render-part d ht)
       (define number (collected-info-number (part-collected-info d ht)))
       (define title-content (part-title-content d))
+      (define plain-title (content->string title-content))
       (define sname (style-name (part-style d)))
-      (define sproperties (style-properties (part-style d)))
-     
+      
       (unless (not title-content)
         (dtrace-debug "part: [~a] ~a"
                       (add1 (number-depth number))
-                      (content->string title-content)))
+                      plain-title))
 
       (dtrace-debug "  style: ~a" sname)
-      (for ([p (in-list sproperties)])
-        (dtrace-debug "    ~a" p))
+
+      (define-values (clean-properties docProps)
+        (let sift-property ([properties (style-properties (part-style d))]
+                            [doc-id #false]
+                            [doc-version #false]
+                            [doc-date #false]
+                            [srehto null])
+          (if (pair? properties)
+              (let-values ([(self rest) (values (car properties) (cdr properties))])
+                (cond [(body-id? self) (sift-property rest (body-id-value self) doc-version doc-date srehto)]
+                      [(document-version? self) (sift-property rest doc-id (document-version-text self) doc-date srehto)]
+                      [(document-date? self) (sift-property rest doc-id doc-version (document-date-text self) srehto)]
+                      [else (sift-property rest doc-id doc-version doc-date (cons self srehto))]))
+              (let ([ps (reverse srehto)])
+                (values ps docProps)))))
       
       #;(unless (part-style? d 'hidden)
         (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
@@ -103,11 +116,12 @@
 
       (zip-create #:strategy 'fixed
                   (current-output-port)
-                  (let ([main-part-name "/word/document.xml"])
+                  (let ([main-part-name "/wargrey/word/document.xml"])
                     (list (opc-content-types-markup-entry
                            (list (cons main-part-name 'document.xml)))
                           (opc-relationships-markup-entry
                            "/_rels/.rels" (list (opc-make-internal-relationship 'rId1 main-part-name 'document.xml)))
+                          docProps
                           (opc-word-document-markup-entry main-part-name)))))
 
     (define/override (render-flow f part ht starting-item?)

@@ -25,12 +25,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-relationships-markup-entry : (->* (String) ((Listof OPC-Relationship) #:utc Integer) Archive-Entry) 
   (lambda [partname [elements null] #:utc [ts #false]]
-    (define relationships : Xexpr
+    (define relationships.xml : Xexpr
       (list 'Relationships `([xmlns . ,(assert (opc-xmlns 'Relationships))])
             (map opc-relation-element->relationship elements)))
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 8.3.3.1, 2006"
-                              (xexpr->bytes relationships #:prolog? #true)
+                              (xexpr->bytes relationships.xml #:prolog? #true)
                               (opc-part-name-normalize/zip partname))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

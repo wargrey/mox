@@ -14,6 +14,9 @@
     (case part
       [(Types)         "http://schemas.openxmlformats.org/package/2006/content-types"]
       [(Core)          "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"]
+      [(Core:DCTerms)  "http://purl.org/dc/terms/"]
+      [(Core:DC)       "http://purl.org/dc/elements/1.1/"]
+      [(Core:XSI)      "http://www.w3.org/2001/XMLSchema-instance"]
       [(Signatures)    "http://schemas.openxmlformats.org/package/2006/digital-signature"]
       [(Relationships) "http://schemas.openxmlformats.org/package/2006/relationships"]
       [(Compatibility) "http://schemas.openxmlformats.org/markup-compatibility/2006"]

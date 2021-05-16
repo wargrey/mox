@@ -16,13 +16,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-content-types-markup-entry : (->* () ((Listof (Pairof String Symbol)) (Listof Symbol) #:utc Integer) Archive-Entry)
   (lambda [[overrides null] [defaults null] #:utc [ts #false]]
-    (define content-type : Xexpr
+    (define content-type.xml : Xexpr
       (list 'Types `([xmlns . ,(assert (opc-xmlns 'Types))])
             (append (filter-map opc-type->default (remove-duplicates (list* 'xml 'rels defaults)))
                     (filter-map opc-type->override ((inst remove-duplicates (Pairof String Symbol) String) overrides string=? #:key car)))))
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 9.1.2.2, 2006"
-                              (xexpr->bytes content-type #:prolog? #true)
+                              (xexpr->bytes content-type.xml #:prolog? #true)
                               (opc-part-name-normalize/zip "/[Content_Types].xml"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
