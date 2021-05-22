@@ -36,7 +36,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-relation-element->relationship : (-> OPC-Relationship Xexpr)
   (lambda [elem]
-    `(Relationship ([Id         . ,(symbol->immutable-string (car elem))]
-                    [Target     . ,(opc-part-name-normalize/zip (cadr elem))]
-                    [Type       . ,(caddr elem)]
-                    [TargetMode . ,(if (cadddr elem) "External" "Internal")]))))
+    (define attlist : (Listof (Pairof Symbol String))
+      `([Id         . ,(symbol->immutable-string (car elem))]
+        [Target     . ,(opc-part-name-normalize/zip (cadr elem))]
+        [Type       . ,(caddr elem)]))
+    
+    (list 'Relationship (cond [(cadddr elem) (cons (cons 'TargetMode "External") attlist)]
+                              [else attlist]))))

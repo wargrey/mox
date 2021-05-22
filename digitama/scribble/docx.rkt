@@ -3,7 +3,6 @@
 (provide (all-defined-out))
 
 (require scribble/core)
-(require scribble/html-properties)
 
 (require racket/class)
 (require racket/list)
@@ -14,9 +13,13 @@
 
 (require "docx/metainfo.rkt")
 (require "docx/document.rkt")
+(require "docx/app.rkt")
+
+(require "shared/render.rkt")
 
 (require "package/content.type.rkt")
 (require "package/relationship.rkt")
+(require "package/core.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define current-docx-link-sections (make-parameter #f))
@@ -70,22 +73,7 @@
                       (add1 (number-depth number))
                       plain-title))
 
-      (dtrace-debug "  style: ~a" sname)
-
-      (define-values (clean-properties docProps)
-        (let sift-property ([properties (style-properties (part-style d))]
-                            [doc-id #false]
-                            [doc-version #false]
-                            [doc-date #false]
-                            [srehto null])
-          (if (pair? properties)
-              (let-values ([(self rest) (values (car properties) (cdr properties))])
-                (cond [(body-id? self) (sift-property rest (body-id-value self) doc-version doc-date srehto)]
-                      [(document-version? self) (sift-property rest doc-id (document-version-text self) doc-date srehto)]
-                      [(document-date? self) (sift-property rest doc-id doc-version (document-date-text self) srehto)]
-                      [else (sift-property rest doc-id doc-version doc-date (cons self srehto))]))
-              (let ([ps (reverse srehto)])
-                (values ps docProps)))))
+      (define-values (clean-properties doc-id doc-version doc-date) (mox-sift-property (style-properties (part-style d))))
       
       #;(unless (part-style? d 'hidden)
         (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
@@ -114,14 +102,23 @@
           (render-part (car secs) ht)
           (loop (add1 pos) (cdr secs) #t)))
 
-      (zip-create #:strategy 'fixed
-                  (current-output-port)
-                  (let ([main-part-name "/wargrey/word/document.xml"])
+      (let ([main-part-name (format "/~a/word/document.xml" (if (string=? doc-id "") 'wargrey doc-id))]
+            [docProps (opc-word-properties-markup-entries "/~a" plain-title "wargrey" doc-version doc-date clean-properties)])
+        (zip-create #:strategy 'fixed
+                    (current-output-port)
                     (list (opc-content-types-markup-entry
-                           (list (cons main-part-name 'document.xml)))
+                           (cons (cons main-part-name 'document.xml)
+                                 (for/list ([type.entry (in-list docProps)])
+                                   (cons (string-append "/" (archive-entry-name (cdr type.entry)))
+                                         (car type.entry)))))
                           (opc-relationships-markup-entry
-                           "/_rels/.rels" (list (opc-make-internal-relationship 'rId1 main-part-name 'document.xml)))
-                          docProps
+                           "/_rels/.rels"
+                           (list* (opc-make-internal-relationship (mox-relation-id 'main) main-part-name 'document.xml)
+                                  (for/list ([type.prop (in-list docProps)])
+                                    (opc-make-internal-relationship (mox-relation-id (car type.prop))
+                                                                    (archive-entry-name (cdr type.prop))
+                                                                    (car type.prop)))))
+                          (map cdr docProps)
                           (opc-word-document-markup-entry main-part-name)))))
 
     (define/override (render-flow f part ht starting-item?)

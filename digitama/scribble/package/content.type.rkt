@@ -3,7 +3,6 @@
 (provide (all-defined-out))
 
 (require digimon/archive)
-(require digimon/iana)
 
 (require sgml/xexpr)
 

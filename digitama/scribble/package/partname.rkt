@@ -10,4 +10,6 @@
 (define opc-part-name-normalize/zip : (-> String String)
   (lambda [name]
     ; MOX part names are prefixed with '/', which should be removed for zip entries
-    (opc-part-name-normalize (substring name 1))))
+    (cond [(string=? name "") #| deadcode|# ""]
+          [(char=? (string-ref name 0) #\/) (opc-part-name-normalize (substring name 1))]
+          [else name])))
