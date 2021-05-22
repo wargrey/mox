@@ -41,26 +41,27 @@
               [else (make-mox-metainfo)])))
 
     (define cores : (Listof (Option Xexpr))
-      (list (select-string-value 'category (mox-metainfo-category metainfo))
-            (select-string-value 'contentStatus (mox-metainfo-status metainfo))
-            (select-string-value 'contentType (mox-metainfo-type metainfo))
+      (list (select-string-value 'cp:category (mox-metainfo-category metainfo))
+            (select-string-value 'cp:contentStatus (mox-metainfo-status metainfo))
+            (select-string-value 'cp:contentType (mox-metainfo-type metainfo))
             (select-string-value 'dcterms:created (mox-metainfo-created metainfo))
             (select-string-value 'dc:creator (mox-metainfo-creator metainfo))
             (select-string-value 'dc:description (mox-metainfo-description metainfo))
             (select-string-value 'dc:identifier (mox-metainfo-identifier metainfo))
             (select-list-value 'keywords (mox-metainfo-keywords metainfo))
             (select-symbol-value 'dc:language (mox-metainfo-language metainfo))
-            (select-string-value 'lastModifiedBy (mox-metainfo-last-modifier metainfo))
-            (select-string-value 'lastPrinted (mox-metainfo-last-printed metainfo))
+            (select-string-value 'cp:lastModifiedBy (mox-metainfo-last-modifier metainfo))
+            (select-string-value 'cp:lastPrinted (mox-metainfo-last-printed metainfo))
             (select-string-value 'dcterms:modified (mox-metainfo-modified metainfo) author)
-            (select-natural-value 'revision (mox-metainfo-revision metainfo))
+            (select-natural-value 'cp:revision (mox-metainfo-revision metainfo))
             (select-string-value 'dc:subject (mox-metainfo-subject metainfo))
             (select-string-value 'dc:title (mox-metainfo-title metainfo) title)
             (select-string-value 'dc:version (mox-metainfo-version metainfo) version)))
     
     (define core-property.xml : Xexpr
-      (list 'cp:coreProperties `([xmlns . ,(assert (opc-xmlns 'Core))]
+      (list 'cp:coreProperties `([xmlns:cp . ,(assert (opc-xmlns 'Core:CP))]
                                  [xmlns:dcterms . ,(assert (opc-xmlns 'Core:DCTerms))]
+                                 [xmlns:dcmitype . ,(assert (opc-xmlns 'Core:DCMIType))]
                                  [xmlns:dc . ,(assert (opc-xmlns 'Core:DC))]
                                  [xmlns:xsi . ,(assert (opc-xmlns 'Core:XSI))])
             (filter xexpr? cores)))
