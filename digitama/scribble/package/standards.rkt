@@ -13,9 +13,9 @@
   (lambda [part]
     (case part
       [(Types)         "http://schemas.openxmlformats.org/package/2006/content-types"]
-      [(App)           "http://schemas.openxmlformats.org/package/2006/extended-properties"]
+      [(App)           "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"]
       [(App:VT)        "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"]
-      [(Core:CP)       "http://schemas.openxmlformats.org/package/2006/core-properties"]
+      [(Core:CP)       "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"]
       [(Core:DCTerms)  "http://purl.org/dc/terms/"]
       [(Core:DCMIType) "http://purl.org/dc/dcmityp/"]
       [(Core:DC)       "http://purl.org/dc/elements/1.1/"]

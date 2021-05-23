@@ -6,19 +6,15 @@
 @handbook-title/pkg-desc[
  #:properties (make-mox-metainfo #:category "category"
                                  #:status "status" #:type "type"
-                                 #:created "created" #:creator "creator"
-                                 #:description "description"
+                                 #:created "2021-05-22T00:00:00Z"
+                                 #:comment "comment"
                                  #:identifier "identifier"
-                                 #:keywords (list 'key 'words)
-                                 #:langauge 'en)
-   [language : (Option Symbol) #false]
-   [last-modifier : (Option String) #false]
-   [last-printed : (Option String) #false]
-   [modified : (Option String) #false]
-   [revision : (Option Natural) #false]
-   [subject : (Option String) #false]
-   [title : (Option String) #false]
-   [version : (Option String) #false])]
+                                 #:keywords (list "key" "words")
+                                 #:language 'en
+                                 #:last-modifier "last modifier"
+                                 #:last-printed "2021-05-23T00:00:00Z"
+                                 #:revision 1
+                                 #:subject "subject")]
 
 @handbook-smart-table[]
 

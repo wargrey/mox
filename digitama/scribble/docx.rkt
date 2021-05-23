@@ -103,7 +103,7 @@
           (loop (add1 pos) (cdr secs) #t)))
 
       (let ([main-part-name (format "/~a/word/document.xml" (if (string=? doc-id "") 'wargrey doc-id))]
-            [docProps (opc-word-properties-markup-entries "/~a" plain-title "wargrey" doc-version doc-date clean-properties)])
+            [docProps (opc-word-properties-markup-entries "/docProps/~a" plain-title "wargrey" doc-version doc-date clean-properties)])
         (zip-create #:strategy 'fixed
                     (current-output-port)
                     (list (opc-content-types-markup-entry
