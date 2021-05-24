@@ -15,10 +15,10 @@
 (require "../package/standards.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define opc-word-properties-markup-entries : (->* (String String (Option String) (Option String) (Option String) (Listof Any))
+(define opc-word-properties-markup-entries : (->* (String String MOX-NameList (Option String) (Option String) (Listof Any))
                                                   (#:utc Integer)
                                                   (Listof (Pairof Symbol Archive-Entry)))
-  (lambda [part-name-fmt title author version timestamp properties #:utc [ts #false]]
+  (lambda [part-name-fmt title authors version timestamp properties #:utc [ts #false]]
     (define metainfo : MOX-Metainfo (mox-properties-metainfo-ref properties))
     (define info : Pkg-Info (assert (single-collection-info (quote-source-file))))
     (define info-ref : Info-Ref (pkg-info-ref info))
@@ -30,7 +30,7 @@
                                                       "devimon https://github.com/wargrey/mox"
                                                       (info-ref 'version (λ [] 1.0)))))
 
-    (list (cons 'Core (mox-core-properties-markup-entries part-name-fmt metainfo title author version timestamp #:utc ts))
+    (list (cons 'Core (mox-core-properties-markup-entries part-name-fmt metainfo title authors version timestamp #:utc ts))
           (cons 'App (make-archive-ascii-entry #:utc-time ts #:comment "Fundamentals 15.2.11.3, 2006"
                                                (xexpr->bytes wordProperty.xml #:prolog? #true)
                                                (opc-part-name-normalize/zip (format part-name-fmt "app.xml")))))))

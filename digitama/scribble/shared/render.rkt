@@ -5,6 +5,7 @@
 (require racket/string)
 
 (require digimon/archive)
+(require digimon/date)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (module untyped typed/racket/base
@@ -25,7 +26,7 @@
     (let sift-property ([properties : (Listof Any) ps]
                         [doc-id : String ""]
                         [doc-version : String ""]
-                        [doc-date : String ""]
+                        [doc-date : String (strftime #:locale? #false)]
                         [srehto : (Listof Any) null])
       (cond [(null? properties) (values (reverse srehto) doc-id doc-version doc-date)]
             [else (let-values ([(self rest) (values (car properties) (cdr properties))])

@@ -1,20 +1,19 @@
 #lang scribble/manual
 
-@(require digimon/tamer)
-@(require mox/digitama/scribble/package/core)
+@(require mox/scribble)
+@(require digimon/date)
 
-@handbook-title/pkg-desc[
- #:properties (make-mox-metainfo #:category "category"
-                                 #:status "status" #:type "type"
-                                 #:created "2021-05-22T00:00:00Z"
-                                 #:comment "comment"
-                                 #:identifier "identifier"
-                                 #:keywords (list "key" "words")
-                                 #:language 'en
-                                 #:last-modifier "last modifier"
-                                 #:last-printed "2021-05-23T00:00:00Z"
-                                 #:revision 1
-                                 #:subject "subject")]
+@mox-handbook-title/pkg-desc[
+ #:category "c1; c2"
+ #:status "status" #:type "type"
+ #:created "2021-05-22T00:00:00Z"
+ #:comment "comment"
+ #:identifier "identifier"
+ #:tags (list "key" "words")
+ #:language 'en
+ #:last-modifier (list "last; modifier")
+ #:revision 1
+ #:subject "subject"]
 
 @handbook-smart-table[]
 
