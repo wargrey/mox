@@ -7,6 +7,7 @@
 (require sgml/xexpr)
 
 (require racket/symbol)
+(require racket/path)
 
 (require "partname.rkt")
 (require "standards.rkt")
@@ -34,22 +35,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-relationships-markup-entry : (->* (String) ((Listof OPC-Relationship) #:utc Integer) Archive-Entry) 
-  (lambda [partname [elements null] #:utc [ts #false]]
+  (lambda [base [elements null] #:utc [ts #false]]
+    (define partname : String (opc-relationship-part-name base))
+    (define entry-name : String (opc-part-name-normalize/zip partname))
+    
     (define relationships.xml : Xexpr
       (list 'Relationships `([xmlns . ,(assert (opc-xmlns 'Relationships))])
-            (map opc-relation-element->relationship elements)))
+            (for/list : (Listof Xexpr) ([e (in-list elements)])
+              (opc-relation-element->relationship entry-name e))))
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 8.3.3.1, 2006"
                               (xexpr->bytes relationships.xml #:prolog? #true)
-                              (opc-part-name-normalize/zip partname))))
+                              entry-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define opc-relation-element->relationship : (-> OPC-Relationship Xexpr)
-  (lambda [elem]
+(define opc-relationship-part-name : (-> String String)
+  (lambda [base]
+    (define basename : (Option Path) (file-name-from-path base))
+
+    (cond [(not basename) (path->string (build-path base "_rels/.rels"))]
+          [else (path->string (build-path (assert (path-only base)) "_rels" (path-add-extension basename ".rels" ".")))])))
+
+(define opc-relationship-relative-entry-name : (-> String String String)
+  (lambda [base target]
+    (define dirname : (Option Path) (path-only (string->some-system-path base 'unix)))
+
+    (cond [(not dirname) target]
+          [else (let ([unix-target (string->some-system-path target 'unix)])
+                  (some-system-path->string (find-relative-path dirname unix-target)))])))
+
+(define opc-relation-element->relationship : (-> String OPC-Relationship Xexpr)
+  (lambda [entry-name elem]
+    (define target-entry : String (opc-part-name-normalize/zip (cadr elem)))
+    (define external? : Boolean (cadddr elem))
+    
     (define attlist : (Listof (Pairof Symbol String))
       `([Id         . ,(symbol->immutable-string (car elem))]
-        [Target     . ,(opc-part-name-normalize/zip (cadr elem))]
+        [Target     . ,(if (not external?) (opc-relationship-relative-entry-name entry-name target-entry) target-entry)]
         [Type       . ,(caddr elem)]))
     
-    (list 'Relationship (cond [(cadddr elem) (cons (cons 'TargetMode "External") attlist)]
-                              [else attlist]))))
+    (list 'Relationship (cond [(not external?) attlist]
+                              [else (cons (cons 'TargetMode "External")
+                                          attlist)]))))

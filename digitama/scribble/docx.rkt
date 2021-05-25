@@ -102,32 +102,43 @@
           (render-part (car secs) ht)
           (loop (add1 pos) (cdr secs) #t)))
 
-      (let* ([main-part  (mox-story-part doc-id 'document.xml)]
-             [style-part (mox-story-part doc-id 'style.xml)]
-             [footnote-part (mox-story-part doc-id 'footnote.xml)]
-             [endnote-part (mox-story-part doc-id 'endnote.xml)]
-             [settings-part (mox-story-part doc-id 'settings.xml)]
-             [websettings-part (mox-story-part doc-id 'websettings.xml)]
-             [font-part (mox-story-part doc-id 'font.xml)]
-             [docProps (opc-word-properties-markup-entries "/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)]
-             [overriden-parts (list main-part style-part font-part footnote-part endnote-part settings-part websettings-part)])
+      (let ([main-part  (mox-story-part doc-id 'document.xml)]
+            [style-part (mox-story-part doc-id 'style.xml)]
+            [font-part (mox-story-part doc-id 'font.xml)]
+            [theme-part (mox-story-part doc-id 'theme.xml)]
+            [footnote-part (mox-story-part doc-id 'footnote.xml)]
+            [endnote-part (mox-story-part doc-id 'endnote.xml)]
+            [settings-part (mox-story-part doc-id 'settings.xml)]
+            [websettings-part (mox-story-part doc-id 'websettings.xml)]
+            [docProps (opc-word-properties-markup-entries "/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)])
         (zip-create #:strategy 'fixed
                     (current-output-port)
                     (list (opc-content-types-markup-entry
-                           (append overriden-parts
+                           (append (list main-part style-part font-part theme-part footnote-part endnote-part settings-part websettings-part)
                                    (for/list ([type.entry (in-list docProps)])
                                      (cons (string-append "/" (archive-entry-name (cdr type.entry)))
                                            (car type.entry)))))
                           (opc-relationships-markup-entry
-                           "/_rels/.rels"
-                           (append (map opc-make-internal-relationship overriden-parts)
+                           "/" ; package relationship
+                           (list* (opc-make-internal-relationship main-part)
+                                  (for/list ([type.prop (in-list docProps)])
+                                    (opc-make-internal-relationship (mox-relation-id (car type.prop))
+                                                                    (archive-entry-name (cdr type.prop))
+                                                                    (car type.prop)))))
+                          (map cdr docProps)
+                          (opc-relationships-markup-entry
+                           (car main-part) ; document.xml relationship
+                           (append (map opc-make-internal-relationship
+                                        (list style-part font-part theme-part
+                                              footnote-part endnote-part
+                                              settings-part websettings-part))
                                    (for/list ([type.prop (in-list docProps)])
                                      (opc-make-internal-relationship (mox-relation-id (car type.prop))
                                                                      (archive-entry-name (cdr type.prop))
                                                                      (car type.prop)))))
-                          (map cdr docProps)
                           (opc-word-document-markup-entry (car main-part))
                           (opc-word-style-markup-entry (car style-part))
+                          (opc-word-theme-markup-entry (car theme-part))
                           (opc-word-font-markup-entry (car font-part))
                           (opc-word-footnote-markup-entry (car footnote-part))
                           (opc-word-endnote-markup-entry (car endnote-part))

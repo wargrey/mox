@@ -72,11 +72,12 @@
                   [(Signature)       "http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/origin"]
                   [(document.xml)    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument"]
                   [(style.xml)       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"]
+                  [(font.xml)        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable"]
+                  [(theme.xml)       "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"]
                   [(footnote.xml)    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes"]
                   [(endnote.xml)     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/endnotes"]
                   [(settings.xml)    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings"]
                   [(websettings.xml) "http://schemas.openxmlformats.org/officeDocument/2006/relationships/webSettings"]
-                  [(font.xml)        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/fontTable"]
                   [else (symbol->immutable-string type)])])))
 
 (define opc-type-name : (-> Symbol (Option Symbol))
@@ -96,9 +97,10 @@
       [(Core)            'application/vnd.openxmlformats-package.core-properties+xml]
       [(document.xml)    'application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml]
       [(style.xml)       'application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml]
+      [(font.xml)        'application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml]
+      [(theme.xml)       'application/vnd.openxmlformats-officedocument.theme+xml]
       [(footnote.xml)    'application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml]
       [(endnote.xml)     'application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml]
       [(settings.xml)    'application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml]
       [(websettings.xml) 'application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml]
-      [(font.xml)        'application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml]
       [else #false])))
