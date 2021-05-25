@@ -1,19 +1,19 @@
 #lang scribble/manual
 
 @(require mox/scribble)
-@(require digimon/date)
 
-@mox-handbook-title/pkg-desc[
- #:category "c1; c2"
- #:status "status" #:type "type"
- #:created "2021-05-22T00:00:00Z"
- #:comment "comment"
- #:identifier "identifier"
- #:tags (list "key" "words")
- #:language 'en
- #:last-modifier (list "last; modifier")
- #:revision 1
- #:subject "subject"]
+@mox-handbook-title/pkg-desc[#:category "Handbook" #:status "Draft" #:type "Manual"]
+
+@author{Gyoudmon}
+
+@itemlist[
+ #:style 'compact
+
+ @item{@tech{story}: each unique region of content within a document into which the user can type.
+
+  @itemlist[#:style 'compact
+
+            @item{@tech{main document}: containing the primart contents of the document.}]}]
 
 @handbook-smart-table[]
 

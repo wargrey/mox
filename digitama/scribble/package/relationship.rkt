@@ -11,16 +11,26 @@
 (require "partname.rkt")
 (require "standards.rkt")
 
+(require "../shared/render.rkt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type OPC-Relationship (List Symbol String String Boolean))
 
-(define opc-make-internal-relationship : (-> Symbol String (U String Symbol) OPC-Relationship)
-  (lambda [id target type]
-    (list id target (opc-relationship-type type) #false)))
+(define opc-make-internal-relationship : (case-> [(Pairof String Symbol) -> OPC-Relationship]
+                                                 [Symbol String (U String Symbol) -> OPC-Relationship])
+  (case-lambda
+    [(override)
+     (opc-make-internal-relationship (mox-relation-id (cdr override)) (car override) (cdr override))]
+    [(id target type)
+     (list id target (opc-relationship-type type) #false)]))
 
-(define opc-make-external-relationship : (-> Symbol String (U String Symbol) OPC-Relationship)
-  (lambda [id target type]
-    (list id target (opc-relationship-type type) #true)))
+(define opc-make-external-relationship : (case-> [(Pairof String Symbol) -> OPC-Relationship]
+                                                 [Symbol String (U String Symbol) -> OPC-Relationship])
+  (case-lambda
+    [(override)
+     (opc-make-external-relationship (mox-relation-id (cdr override)) (car override) (cdr override))]
+    [(id target type)
+     (list id target (opc-relationship-type type) #true)]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-relationships-markup-entry : (->* (String) ((Listof OPC-Relationship) #:utc Integer) Archive-Entry) 

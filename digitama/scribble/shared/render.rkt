@@ -3,8 +3,8 @@
 (provide (all-defined-out))
 
 (require racket/string)
+(require racket/symbol)
 
-(require digimon/archive)
 (require digimon/date)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -21,10 +21,20 @@
 (require (submod "." untyped))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-sift-property : (-> (Listof Any) (Values (Listof Any) String String String))
-  (λ [ps]
+(define mox-story-part : (-> String Symbol (Pairof String Symbol))
+  (lambda [id name]
+    (cons (mox-story-part-name id name) name)))
+
+(define mox-story-part-name : (-> String Symbol String)
+  (lambda [id filename]
+    (string-append "/" id
+                   "/story/"
+                   (symbol->immutable-string filename))))
+
+(define mox-sift-property : (-> Symbol (Listof Any) (Values (Listof Any) String String String))
+  (λ [id ps]
     (let sift-property ([properties : (Listof Any) ps]
-                        [doc-id : String ""]
+                        [doc-id : String (symbol->immutable-string id)]
                         [doc-version : String ""]
                         [doc-date : String (strftime #:locale? #false)]
                         [srehto : (Listof Any) null])
@@ -37,4 +47,8 @@
 
 (define mox-relation-id : (-> Symbol Symbol)
   (lambda [type]
-    (gensym type)))
+    (define s (symbol->immutable-string type))
+
+    (cond [(not (string-contains? s ".")) (gensym type)]
+          [else (let ([ss (string-split s #px"[.]")])
+                  (gensym (car ss)))])))

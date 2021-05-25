@@ -12,14 +12,16 @@
 (require digimon/dtrace)
 
 (require "docx/metainfo.rkt")
-(require "docx/document.rkt")
 (require "docx/app.rkt")
+(require "docx/style.rkt")
+(require "docx/misc.rkt")
+
+(require "docx/story/document.rkt")
 
 (require "shared/render.rkt")
 
 (require "package/content.type.rkt")
 (require "package/relationship.rkt")
-(require "package/core.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define current-docx-link-sections (make-parameter #f))
@@ -38,42 +40,40 @@
 (define in-toc (make-parameter #f))
 
 (define (render-mixin %)
-  (class % (inherit render-block format-number number-depth)
+  (class %
+    (inherit-field style-file style-extra-files)
+    (inherit render-block format-number number-depth install-file)
+    (inherit extract-part-style-files link-render-style-at-element)
 
     (define/override (current-render-mode) (list docx-render-mode))
     (define/override (get-suffix) docx-suffix)
 
-    (define/override (get-substitutions)
-      '((#rx"---" "\U2014")
-        (#rx"--" "\U2013")
-        (#rx"``" "\U201C")
-        (#rx"''" "\U201D")
-        (#rx"'" "\U2019")))
-
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    (define/override (collect-part-tags d ci number)
-      (for ([t (part-tags d)])
+    (define/override (collect-part-tags p ci number)
+      (for ([t (part-tags p)])
         (let ([t (generate-tag t ci)])
           (collect-put! ci t
-                        (vector (or (part-title-content d) '("???"))
+                        (vector (or (part-title-content p) '("???"))
                                 (add-current-tag-prefix t)
                                 number
                                 docx-part-tag)))))
 
-    
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    (define/override (render-part d ht)
-      (define number (collected-info-number (part-collected-info d ht)))
-      (define title-content (part-title-content d))
+    (define/override (render-one p ri ?dest)
+      (define number (collected-info-number (part-collected-info p ri)))
+      (define title-content (part-title-content p))
       (define plain-title (content->string title-content))
-      (define sname (style-name (part-style d)))
+      (define sname (style-name (part-style p)))
+
+      (dtrace-debug "style: ~a" style-file #:topic docx-render-mode)
+      (dtrace-debug "extra style: ~a" style-extra-files #:topic docx-render-mode)
       
       (unless (not title-content)
         (dtrace-debug "part: [~a] ~a"
                       (add1 (number-depth number))
                       plain-title))
 
-      (define-values (clean-properties doc-id doc-version doc-date) (mox-sift-property (style-properties (part-style d))))
+      (define-values (clean-properties doc-id doc-version doc-date) (mox-sift-property 'wargrey (style-properties (part-style p))))
       
       #;(unless (part-style? d 'hidden)
         (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
@@ -102,24 +102,37 @@
           (render-part (car secs) ht)
           (loop (add1 pos) (cdr secs) #t)))
 
-      (let ([main-part-name (format "/~a/word/document.xml" (if (string=? doc-id "") 'wargrey doc-id))]
-            [docProps (opc-word-properties-markup-entries "/~a" plain-title (list "wargrey" " " "gyoudmon") doc-version doc-date clean-properties)])
+      (let* ([main-part  (mox-story-part doc-id 'document.xml)]
+             [style-part (mox-story-part doc-id 'style.xml)]
+             [footnote-part (mox-story-part doc-id 'footnote.xml)]
+             [endnote-part (mox-story-part doc-id 'endnote.xml)]
+             [settings-part (mox-story-part doc-id 'settings.xml)]
+             [websettings-part (mox-story-part doc-id 'websettings.xml)]
+             [font-part (mox-story-part doc-id 'font.xml)]
+             [docProps (opc-word-properties-markup-entries "/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)]
+             [overriden-parts (list main-part style-part font-part footnote-part endnote-part settings-part websettings-part)])
         (zip-create #:strategy 'fixed
                     (current-output-port)
                     (list (opc-content-types-markup-entry
-                           (cons (cons main-part-name 'document.xml)
-                                 (for/list ([type.entry (in-list docProps)])
-                                   (cons (string-append "/" (archive-entry-name (cdr type.entry)))
-                                         (car type.entry)))))
+                           (append overriden-parts
+                                   (for/list ([type.entry (in-list docProps)])
+                                     (cons (string-append "/" (archive-entry-name (cdr type.entry)))
+                                           (car type.entry)))))
                           (opc-relationships-markup-entry
                            "/_rels/.rels"
-                           (list* (opc-make-internal-relationship (mox-relation-id 'main) main-part-name 'document.xml)
-                                  (for/list ([type.prop (in-list docProps)])
-                                    (opc-make-internal-relationship (mox-relation-id (car type.prop))
-                                                                    (archive-entry-name (cdr type.prop))
-                                                                    (car type.prop)))))
+                           (append (map opc-make-internal-relationship overriden-parts)
+                                   (for/list ([type.prop (in-list docProps)])
+                                     (opc-make-internal-relationship (mox-relation-id (car type.prop))
+                                                                     (archive-entry-name (cdr type.prop))
+                                                                     (car type.prop)))))
                           (map cdr docProps)
-                          (opc-word-document-markup-entry main-part-name)))))
+                          (opc-word-document-markup-entry (car main-part))
+                          (opc-word-style-markup-entry (car style-part))
+                          (opc-word-font-markup-entry (car font-part))
+                          (opc-word-footnote-markup-entry (car footnote-part))
+                          (opc-word-endnote-markup-entry (car endnote-part))
+                          (opc-word-settings-markup-entry (car settings-part))
+                          (opc-word-websettings-markup-entry (car websettings-part))))))
 
     (define/override (render-flow f part ht starting-item?)
       (if (null? f)
