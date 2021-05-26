@@ -103,14 +103,14 @@
           (loop (add1 pos) (cdr secs) #t)))
 
       (let ([main-part  (mox-story-part doc-id 'document.xml)]
-            [style-part (mox-story-part doc-id 'style.xml)]
-            [font-part (mox-story-part doc-id 'font.xml)]
+            [style-part (mox-story-part doc-id 'styles.xml)]
+            [font-part (mox-story-part doc-id 'fontTable.xml)]
             [theme-part (mox-story-part doc-id 'theme.xml)]
-            [footnote-part (mox-story-part doc-id 'footnote.xml)]
-            [endnote-part (mox-story-part doc-id 'endnote.xml)]
+            [footnote-part (mox-story-part doc-id 'footnotes.xml)]
+            [endnote-part (mox-story-part doc-id 'endnotes.xml)]
             [settings-part (mox-story-part doc-id 'settings.xml)]
-            [websettings-part (mox-story-part doc-id 'websettings.xml)]
-            [docProps (opc-word-properties-markup-entries "/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)])
+            [websettings-part (mox-story-part doc-id 'webSettings.xml)]
+            [docProps (opc-word-properties-markup-entries "/docProps/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)])
         (zip-create #:strategy 'fixed
                     (current-output-port)
                     (list (opc-content-types-markup-entry
@@ -128,14 +128,10 @@
                           (map cdr docProps)
                           (opc-relationships-markup-entry
                            (car main-part) ; document.xml relationship
-                           (append (map opc-make-internal-relationship
-                                        (list style-part font-part theme-part
-                                              footnote-part endnote-part
-                                              settings-part websettings-part))
-                                   (for/list ([type.prop (in-list docProps)])
-                                     (opc-make-internal-relationship (mox-relation-id (car type.prop))
-                                                                     (archive-entry-name (cdr type.prop))
-                                                                     (car type.prop)))))
+                           (map opc-make-internal-relationship
+                                (list style-part font-part theme-part
+                                      footnote-part endnote-part
+                                      settings-part websettings-part)))
                           (opc-word-document-markup-entry (car main-part))
                           (opc-word-style-markup-entry (car style-part))
                           (opc-word-theme-markup-entry (car theme-part))

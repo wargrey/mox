@@ -27,8 +27,8 @@
 
 (define mox-story-part-name : (-> String Symbol String)
   (lambda [id filename]
-    (string-append "/" id
-                   "/story/"
+    (string-append "/word/" ;id
+                   ;"/story/"
                    (symbol->immutable-string filename))))
 
 (define mox-sift-property : (-> Symbol (Listof Any) (Values (Listof Any) String String String))

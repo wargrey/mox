@@ -37,7 +37,7 @@
 (define opc-relationships-markup-entry : (->* (String) ((Listof OPC-Relationship) #:utc Integer) Archive-Entry) 
   (lambda [base [elements null] #:utc [ts #false]]
     (define partname : String (opc-relationship-part-name base))
-    (define entry-name : String (opc-part-name-normalize/zip partname))
+    (define entry-name : String (opc-part-name-normalize/zip base))
     
     (define relationships.xml : Xexpr
       (list 'Relationships `([xmlns . ,(assert (opc-xmlns 'Relationships))])
@@ -46,7 +46,7 @@
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 8.3.3.1, 2006"
                               (xexpr->bytes relationships.xml #:prolog? #true)
-                              entry-name)))
+                              (opc-part-name-normalize/zip partname))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-relationship-part-name : (-> String String)
@@ -58,11 +58,11 @@
 
 (define opc-relationship-relative-entry-name : (-> String String String)
   (lambda [base target]
-    (define dirname : (Option Path) (path-only (string->some-system-path base 'unix)))
-
-    (cond [(not dirname) target]
-          [else (let ([unix-target (string->some-system-path target 'unix)])
-                  (some-system-path->string (find-relative-path dirname unix-target)))])))
+    (cond [(string=? base "") target]
+          [else (let ([dirname (path-only (string->some-system-path base 'unix))])
+                  (cond [(not dirname) target]
+                        [else (let ([unix-target (string->some-system-path target 'unix)])
+                                (some-system-path->string (find-relative-path dirname unix-target)))]))])))
 
 (define opc-relation-element->relationship : (-> String OPC-Relationship Xexpr)
   (lambda [entry-name elem]
