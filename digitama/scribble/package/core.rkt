@@ -38,6 +38,7 @@
    [version : (Option String) #false]
 
    ; /docProps/app.xml
+   [template : (Option String) "Normal.dotm"]
    [manager : MOX-NameList null]
    [company : (Option String) #false]))
 
@@ -87,12 +88,16 @@
 (define mox-shared-application-properties-xexprs : (-> MOX-Metainfo String Any (Listof Xexpr))
   (lambda [metainfo application appversion]
     (define apps : (Listof (Option Xexpr))
-      (list `(Application () (,application))
+      (list (select-string-value   'Template (mox-metainfo-template metainfo))
+            
+            `(Application () (,application))
+            '(ScaleCrop () ("false"))
 
             ; TODO: why these two properties don't work
             (select-namelist-value 'Manager (mox-metainfo-manager metainfo))
             (select-string-value   'Company (mox-metainfo-company metainfo))
 
+            '(SharedDoc () ("false"))
             `(AppVersion () (,(format "~a" appversion)))))
     
     (filter xexpr? apps)))

@@ -65,7 +65,7 @@
   (lambda [type]
     (cond [(string? type) type]
           [else (case type ; should be consistent with those in `opc-override-type-name`
-                  [(App)             "http://schemas.openxmlformats.org/package/2006/relationships/extended-properties"]
+                  [(App)             "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"]
                   [(Core)            "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"]
                   [(Thumbnail)       "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail"]
                   [(Certificate)     "http://schemas.openxmlformats.org/package/2006/relationships/digital-signature/certificate"]
@@ -93,7 +93,7 @@
 (define opc-override-type-name : (-> Symbol (Option Symbol))
   (lambda [t]
     (case t ; should be consistent with those in `opc-relation-type`
-      [(App)             'application/vnd.openxmlformats-package.extended-properties+xml]
+      [(App)             'application/vnd.openxmlformats-officedocument.extended-properties+xml]
       [(Core)            'application/vnd.openxmlformats-package.core-properties+xml]
       [(document.xml)    'application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml]
       [(styles.xml)      'application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml]
