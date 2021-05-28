@@ -11,6 +11,21 @@
 (require "../../package/xmlns.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(struct word-paragraph
+  ([content : (Option (Listof Any))]
+   [style-name : (U String Symbol False)]
+   [style-properties : (Listof Any)])
+  #:type-name Word-Paragraph
+  #:transparent)
+
+(struct word-section word-paragraph
+  ([tag-prefixes : (Listof String)]
+   [link-render-style : Symbol]
+   [depth : Natural])
+  #:type-name Word-Section
+  #:transparent)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-word-document-markup-entry : (->* (String) (#:utc Integer) Archive-Entry)
   (lambda [part-name #:utc [ts #false]]
     (define story : Xexpr

@@ -8,5 +8,3 @@ Gyoudmon
   user can type.
 
   * main document: containing the primart contents of the document.
-
-

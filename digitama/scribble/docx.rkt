@@ -26,23 +26,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define current-docx-link-sections (make-parameter #f))
 
-(define current-indent (make-parameter 0))
-(define (make-indent amt)
-  (+ amt (current-indent)))
-(define (indent)
-  (define i (current-indent))
-  (unless (zero? i) (display (make-string i #\space))))
-(define (indented-newline)
-  (newline)
-  (indent))
-
-(define note-depth (make-parameter 0))
-(define in-toc (make-parameter #f))
-
 (define (render-mixin %)
   (class %
     (inherit-field style-file style-extra-files)
-    (inherit render-block format-number number-depth install-file)
+    (inherit render-part render-flow render-block format-number number-depth install-file)
     (inherit extract-part-style-files link-render-style-at-element)
 
     (define/override (current-render-mode) (list docx-render-mode))
@@ -60,45 +47,12 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (define/override (render-one p ri ?dest)
-      (define number (collected-info-number (part-collected-info p ri)))
-      (define title-content (part-title-content p))
-      (define plain-title (content->string title-content))
-      (define sname (style-name (part-style p)))
-      
-      (unless (not title-content)
-        (dtrace-debug "part: [~a] ~a"
-                      (add1 (number-depth number))
-                      plain-title))
+      (define title/raw (part-title-content p))
+      (define plain-title (and title/raw (content->string title/raw)))
 
       (define-values (clean-properties doc-id doc-version doc-date) (mox-sift-property 'wargrey (style-properties (part-style p))))
+      (define document (render-part p ri))
       
-      #;(unless (part-style? d 'hidden)
-        (printf (string-append (make-string (add1 (number-depth number)) #\#) " "))
-        
-        (let ([s (format-number number '() #t)])
-          (unless (null? s)
-            (printf "~a~a" 
-                    (car s)
-                    (if title-content
-                        " "
-                        "")))
-          (unless (not title-content)
-            (render-content title-content d ht))
-          
-          (when (or (pair? number) title-content)
-            (newline)
-            (newline))))
-      
-      #;(render-flow (part-blocks d) d ht #f)
-      
-      #;(let loop ([pos 1]
-                 [secs (part-parts d)]
-                 [need-newline? (pair? (part-blocks d))])
-        (unless (null? secs)
-          (when need-newline? (newline))
-          (render-part (car secs) ht)
-          (loop (add1 pos) (cdr secs) #t)))
-
       (let ([main-part  (mox-story-part doc-id 'document.xml)]
             [style-part (mox-story-part doc-id 'styles.xml)]
             [font-part (mox-story-part doc-id 'fontTable.xml)]
@@ -138,18 +92,16 @@
                           (opc-word-settings-markup-entry (car settings-part))
                           (opc-word-websettings-markup-entry (car websettings-part))))))
 
-    (define/override (render-flow f part ht starting-item?)
-      (if (null? f)
-          null
-          (append*
-           (render-block (car f) part ht starting-item?)
-           (for/list ([p (in-list (cdr f))])
-             (indented-newline)
-             (render-block p part ht #f)))))
+    (define/override (render-part-content p ri)
+      (cons (word-section (and (part-title-content p) (render-content (part-title-content p) p ri))
+                          (style-name (part-style p)) (style-properties (part-style p))
+                          (current-tag-prefixes)
+                          (link-render-style-mode (current-link-render-style))
+                          (number-depth (collected-info-number (part-collected-info p ri))))
 
-    (define/override (render-intrapara-block p part ri first? last? starting-item?)
-      (unless first? (indented-newline))
-      (super render-intrapara-block p part ri first? last? starting-item?))
+            (append (render-flow (part-blocks p) p ri #f)
+                    (map (lambda (s) (render-part s ri))
+                         (part-parts p)))))
 
     (define/override (render-table i part ht inline?)
       (define flowss (table-blockss i))
@@ -172,8 +124,7 @@
                                      (if (eq? d 'cont)
                                          d
                                          (let ([o (open-output-string)])
-                                           (parameterize ([current-indent 0]
-                                                          [current-output-port o])
+                                           (parameterize ([current-output-port o])
                                              (render-block d part ht #f))
                                            (regexp-split
                                             #rx"\n"
@@ -197,7 +148,7 @@
                                   (list-ref col i)
                                   "")))])
                 (for/fold ([indent? indent?]) ([sub-row (in-list row*)])
-                  (when indent? (indent))
+                  
                   (for/fold ([space? #f])
                       ([col (in-list sub-row)]
                        [w (in-list widths)])
@@ -216,25 +167,13 @@
             null
             (append*
              (begin (printf "* ")
-                    (parameterize ([current-indent (make-indent 2)])
-                      (render-flow (car flows) part ht #t)))
+                    (render-flow (car flows) part ht #t))
              (for/list ([d (in-list (cdr flows))])
-               (indented-newline)
                (printf "* ")
-               (parameterize ([current-indent (make-indent 2)])
-                 (render-flow d part ht #f)))))))
+               (render-flow d part ht #f))))))
 
     (define/override (render-paragraph p part ri)
-      (define (write-note)
-        (write-string (make-string (note-depth) #\>))
-        (unless (zero? (note-depth))
-          (write-string " ")))
       (cond
-        [(in-toc)
-         (write-note)
-         (super render-paragraph p part ri)
-         ;; two spaces at a line end creates a line break:
-         (write-string "  ")]
         [else
          (define o (open-output-string))
          (parameterize ([current-output-port o])
@@ -251,10 +190,7 @@
                                           '([#rx"\n" " "]   ;1
                                             [#rx"``" ""]))) ;2
          (define lines (list (string-trim to-wrap)))
-         (write-note)
-         (write-string (car lines))
-         (for ([line (in-list (cdr lines))])
-           (newline) (indent) (write-note) (write-string line))])
+         (write-string (car lines))])
       (newline)
       null)
 
@@ -376,12 +312,8 @@
       (unless (memq 'decorative (style-properties s))
         (define note? (equal? (style-name s) "refcontent"))
         (define toc? (equal? (style-name s) 'table-of-contents))
-        (when note?
-          (note-depth (add1 (note-depth))))
-        (begin0 (parameterize ([in-toc (or toc? (in-toc))])
-                  (super render-nested-flow i part ri starting-item?))
-          (when note?
-            (note-depth (sub1 (note-depth)))))))
+
+        (super render-nested-flow i part ri starting-item?)))
 
     (define/override (render-other i part ht)
       (cond

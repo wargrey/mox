@@ -15,6 +15,10 @@
 
             @item{@tech{main document}: containing the primart contents of the document.}]}]
 
+@section{Heading 1}
+
+@subsection{Heading 2}
+
 @handbook-smart-table[]
 
 @handbook-appendix[#:index-section? #true
