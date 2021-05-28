@@ -64,9 +64,6 @@
       (define title-content (part-title-content p))
       (define plain-title (content->string title-content))
       (define sname (style-name (part-style p)))
-
-      (dtrace-debug "style: ~a" style-file #:topic docx-render-mode)
-      (dtrace-debug "extra style: ~a" style-extra-files #:topic docx-render-mode)
       
       (unless (not title-content)
         (dtrace-debug "part: [~a] ~a"
@@ -110,7 +107,7 @@
             [endnote-part (mox-story-part doc-id 'endnotes.xml)]
             [settings-part (mox-story-part doc-id 'settings.xml)]
             [websettings-part (mox-story-part doc-id 'webSettings.xml)]
-            [docProps (opc-word-properties-markup-entries "/docProps/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)])
+            [docProps (opc-word-properties-markup-entries "/~a" plain-title (list "wargrey" "gyoudmon") doc-version doc-date clean-properties)])
         (zip-create #:strategy 'fixed
                     (current-output-port)
                     (list (opc-content-types-markup-entry
@@ -120,11 +117,11 @@
                                            (car type.entry)))))
                           (opc-relationships-markup-entry
                            "/" ; package relationship
-                           (list* (opc-make-internal-relationship main-part)
-                                  (for/list ([type.prop (in-list docProps)])
-                                    (opc-make-internal-relationship (mox-relation-id (car type.prop))
-                                                                    (archive-entry-name (cdr type.prop))
-                                                                    (car type.prop)))))
+                           (append (for/list ([type.prop (in-list docProps)])
+                                     (opc-make-internal-relationship (mox-relation-id (car type.prop))
+                                                                     (archive-entry-name (cdr type.prop))
+                                                                     (car type.prop)))
+                                   (list (opc-make-internal-relationship main-part))))
                           (map cdr docProps)
                           (opc-relationships-markup-entry
                            (car main-part) ; document.xml relationship

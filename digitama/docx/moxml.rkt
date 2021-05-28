@@ -10,7 +10,7 @@
 (define docx-name : Symbol 'docx)
 
 (struct word-document
-  ([body : XML-Document]
+  ([entry : XML-Document]
    [docsettings : (Option XML-Document)]
    [websettings : (Option XML-Document)]
    [fonts : (Option XML-Document)]

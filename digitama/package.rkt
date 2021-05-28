@@ -23,6 +23,7 @@
 
 (require "moxml.rkt")
 (require "shared/moxml.rkt")
+(require "drawing/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-StdIn (U String Path Bytes))
@@ -56,7 +57,8 @@
   #:type-name MOX.ZIP)
 
 (struct mox.ml mox.zip
-  ([shared : MOX-SharedML]
+  ([drawing : MOX-DrawingML]
+   [shared : MOX-SharedML]
    [document : MOXML])
   #:type-name MOX.ML
   #:transparent)
@@ -68,7 +70,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package)
   (lambda [/dev/stdin mox-agent]
-    (define-values (_ shared-unzip shared-realize) (moxml-sharedml-agent))
+    (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent))
+    (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent))
     (define-values (ooxml mox-unzip mox-realize) (mox-agent))
 
     (define orphans : (HashTable Bytes (Pairof Symbol (-> Input-Port))) (make-hash))
@@ -94,6 +97,7 @@
                (define type : Symbol (mox-part-type entry extensions parts))
                
                (or (mox-unzip entry type /dev/pkgin)
+                   (drawing-unzip entry type /dev/pkgin)
                    (shared-unzip entry type /dev/pkgin)
 
                    (case type
@@ -120,6 +124,7 @@
     (mox-package (mox-content-types (unbox &types-xmlns) extensions parts)
                  (mox-relationships (unbox &rels-xmlns) relationships)
                  part-relationships
+                 (drawing-realize)
                  (shared-realize)
                  (mox-realize)
                  orphans)))
