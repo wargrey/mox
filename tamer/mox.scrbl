@@ -4,8 +4,6 @@
 
 @mox-handbook-title/pkg-desc[#:category "Handbook" #:status "Draft" #:type "Manual"]
 
-@author{Gyoudmon}
-
 @itemlist[
  #:style 'compact
 
@@ -13,7 +11,7 @@
 
   @itemlist[#:style 'compact
 
-            @item{@tech{main document}: containing the primart contents of the document.}]}]
+            @item{@tech{main document}: containing the primary contents of the document.}]}]
 
 @section{Heading 1}
 
