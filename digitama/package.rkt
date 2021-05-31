@@ -5,6 +5,8 @@
 (require racket/port)
 (require racket/symbol)
 
+(require digimon/dtrace)
+
 (require sgml/digitama/plain/sax)
 
 (require typed/racket/unsafe)
@@ -95,7 +97,7 @@
              ;;; The input port must be read here, or `unzip` will keep waiting...
              (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/pkgin))])
                (define type : Symbol (mox-part-type entry extensions parts))
-               
+
                (or (mox-unzip entry type /dev/pkgin)
                    (drawing-unzip entry type /dev/pkgin)
                    (shared-unzip entry type /dev/pkgin)

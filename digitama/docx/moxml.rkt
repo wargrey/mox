@@ -120,6 +120,6 @@
                  #false #false #false))
 
 (define docx-glossary? : (-> Bytes Boolean)
-  (let ([px.glossary #px"^word/glossary/"])
+  (let ([px.glossary #px"/glossary/"])
     (lambda [entry]
       (regexp-match? px.glossary entry))))

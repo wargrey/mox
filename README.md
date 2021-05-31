@@ -2,9 +2,7 @@
 
 wargrey
 
-Gyoudmon
-
 * story: each unique region of content within a document into which the
   user can type.
 
-  * main document: containing the primart contents of the document.
+  * main document: containing the primary contents of the document.

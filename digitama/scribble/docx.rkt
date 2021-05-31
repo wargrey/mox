@@ -22,6 +22,7 @@
 (require "docx/story/document.rkt")
 
 (require "shared/render.rkt")
+(require "shared/scribble.rkt")
 
 (require "package/content.type.rkt")
 (require "package/relationship.rkt")
@@ -100,14 +101,13 @@
     (define/override (render-part-content p ri)
       (define c (part-title-content p))
       (define depth (number-depth (collected-info-number (part-collected-info p ri))))
+      (define-values (sn sp) (scribble-style->values (part-style p)))
       
       (dtrace-debug #:topic docx-render-mode
-                    "Section[~a]: ~a" depth (content->string c))
+                    "§[~a]: ~a" depth (content->string c))
       
-      (cons (word-section (if (not c) null (render-content c p ri))
-                          (style-name (part-style p)) (style-properties (part-style p))
-                          (current-tag-prefixes)
-                          (link-render-style-mode (current-link-render-style))
+      (cons (word-section (if (not c) null (render-content c p ri)) sn sp
+                          (current-tag-prefixes) (link-render-style-mode (current-link-render-style))
                           depth)
 
             (apply append
@@ -118,14 +118,14 @@
     (define/override (render-paragraph p part ri)
       (define c (paragraph-content p))
       (define s (paragraph-style p))
+      (define-values (sn sp) (scribble-style->values s))
 
-      (when (and (eq? (style-name s) 'author) c)
+      (when (and (eq? sn 'author) c)
         (set-box! &authors
                   (cons (content->string c)
                         (unbox &authors))))
       
-      (list (word-paragraph (if (not c) null (render-content c part ri))
-                            (style-name s) (style-properties s))))
+      (list (word-paragraph (if (not c) null (render-content c part ri)) sn sp)))
     
     (define/override (render-table i part ht inline?)
       (define flowss (table-blockss i))
@@ -198,25 +198,34 @@
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (define/override (render-content c part ri)
-      (cond [(string? c) (render-text c part ri)] ; short-cut for common case
+      (cond [(string? c) (render-text c part ri)]
             [(list? c) (apply append (for/list ([c (in-list c)]) (render-content c part ri)))]
-            #;[(and (link-element? c) (null? (element-content c)))
-             (let ([v (resolve-get part ri (link-element-tag c))])
-               (if v
-                   (render-content (strip-aux (or (vector-ref v 0) "???")) part ri)
-                   (render-content (list "[missing]") part ri)))]
-            #;[(element? c)
-             (when (render-element? c)
-               ((render-element-render c) this part ri))
-             (render-content (element-content c) part ri)]
-            #;[(multiarg-element? c)
-             (render-content (multiarg-element-contents c) part ri)]
-            #;[(delayed-element? c)
-             (render-content (delayed-element-content c ri) part ri)]
-            #;[(traverse-element? c)
-             (render-content (traverse-element-content c ri) part ri)]
-            #;[(part-relative-element? c)
-             (render-content (part-relative-element-content c ri) part ri)]
+            [(target-element? c)
+             (let-values ([(sn sp) (scribble-style->values (element-style c))]
+                          [(cs tag) (values (element-content c) (target-element-tag c))])
+               (list (word-bookmark (gensym (car tag))
+                                    (render-content cs part ri)
+                                    (tag-key tag ri) sn sp)))]
+            [(link-element? c)
+             (let-values ([(sn sp) (scribble-style->values (element-style c))]
+                          [(cs tag) (values (element-content c) (link-element-tag c))])
+               (list (word-hyperlink (render-content (cond [(not (null? cs)) cs]
+                                                           [else (let ([v (resolve-get part ri tag)])
+                                                                   (if (vector? v)
+                                                                       (strip-aux (or (vector-ref v 0) "???"))
+                                                                       (list "[missing]")))])
+                                                     part ri)
+                                     (tag-key tag ri) sn sp)))]
+            [(element? c)
+             (let-values ([(sn sp) (scribble-style->values (element-style c))])
+               (when (render-element? c) ((render-element-render c) this part ri))
+               (list (word-run-texts (render-content (element-content c) part ri) sn sp)))]
+            [(multiarg-element? c)
+             (let-values ([(sn sp) (scribble-style->values (multiarg-element-style c))])
+               (list (render-content (multiarg-element-contents c) part ri)))]
+            [(delayed-element? c) (render-content (delayed-element-content c ri) part ri)]
+            [(traverse-element? c) (render-content (traverse-element-content c ri) part ri)]
+            [(part-relative-element? c) (render-content (part-relative-element-content c ri) part ri)]
             [(convertible? c) (render-text (convert c 'text) part ri)]
             [else (render-text c part ri)]))
     
@@ -301,5 +310,6 @@
       (set-box! &authors null))
     
     (define (render-text t part ri)
-      (cond [(string? t) (list t)]
-            [else (list (~s t))]))))
+      (list (word-run-text (cond [(string? t) t]
+                                 [else (~s t)])
+                           #false null)))))

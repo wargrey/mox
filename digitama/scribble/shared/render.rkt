@@ -7,18 +7,7 @@
 
 (require digimon/date)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(module untyped typed/racket/base
-  (require/typed/provide
-   scribble/core
-   [#:struct document-date ([text : String]) #:extra-constructor-name make-document-date]
-   [#:struct document-version ([text : String]) #:extra-constructor-name make-document-version])
-
-  (require/typed/provide
-   scribble/html-properties
-   [#:struct body-id ([value : String]) #:extra-constructor-name make-body-id]))
-
-(require (submod "." untyped))
+(require "typed/scribble.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-story-part : (-> String Symbol (Pairof String Symbol))

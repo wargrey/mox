@@ -7,15 +7,19 @@
 @itemlist[
  #:style 'compact
 
- @item{@tech{story}: each unique region of content within a document into which the user can type.
+ @item{@deftech{story}: each unique region of content within a document into which the user can type.
 
   @itemlist[#:style 'compact
 
-            @item{@tech{main document}: containing the primary contents of the document.}]}]
+            @item{@deftech{main document}: containing the primary contents of the document.}]}]
 
 @section{Heading 1}
 
+this content refers to the @tech{story}.
+
 @subsection{Heading 2}
+
+this content refers to the @tech{main document}.
 
 @handbook-smart-table[]
 
