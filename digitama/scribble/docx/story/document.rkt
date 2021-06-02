@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 
 (require racket/symbol)
+(require racket/string)
 
 (require digimon/archive)
 
@@ -15,7 +16,7 @@
 (require "../../package/xmlns.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type Word-Run-Content (U Word-Run Word-Annotation))
+(define-type Word-Run-Content (U Word-Run Word-Annotation String))
 
 (struct Word-Block ())
 (struct Word-Run ())
@@ -39,22 +40,23 @@
 
 (struct word-run-texts Word-Run
   ([contents : (Listof Word-Run-Content)]
-   [style-name : (U String Symbol False)]
+   [style-name : Style-Name]
    [style-properties : Style-Properties])
   #:type-name Word-Run-Texts
   #:transparent)
 
 (struct word-hyperlink Word-Run
-  ([content : (Listof Word-Run-Content)]
+  ([field-id : Symbol]
+   [content : (Listof Word-Run-Content)]
    [tag : (List Symbol String)]
-   [style-name : (U String Symbol False)]
+   [style-name : Style-Name]
    [style-properties : Style-Properties])
   #:type-name Word-Hyperlink
   #:transparent)
 
 (struct word-paragraph Word-Block
   ([content : (Listof Word-Run-Content)]
-   [style-name : (U String Symbol False)]
+   [style-name : Style-Name]
    [style-properties : Style-Properties])
   #:type-name Word-Paragraph
   #:transparent)
@@ -132,17 +134,21 @@
           (cons (word-style-xexpr p:style)
                 runs))))
 
-(define word-run->xexpr : (-> Word-Run Xexpr)
+(define word-run->xexpr : (-> (U Word-Run String) (Listof Xexpr))
   (lambda [r]
-    (cond [(word-run-text? r) (list 'w:r null (list (list 'w:t null (list (word-run-text-content r)))))]
-          [(word-run-texts? r) (list 'w:r null (word-contents->runs (word-run-texts-contents r)))]
-          [(word-hyperlink? r) (word-hyperlink->run r)]
-          [else (word-run/unrecognized r)])))
+    (cond [(string? r)
+           (list (word-contents->run r))]
+          [(word-run-text? r)
+           (list (word-contents->run (word-run-text-content r) (word-run-text-style-name r) (word-run-text-style-properties r)))]
+          [(word-run-texts? r)
+           (list (word-contents->run (word-run-texts-contents r) (word-run-texts-style-name r) (word-run-texts-style-properties r)))]
+          [(word-hyperlink? r) (word-hyperlink->field r)]
+          [else (list (word-run/unrecognized r))])))
 
 (define word-annotation->xexpr : (-> Word-Annotation (Listof Xexpr))
   (lambda [a]
     (cond [(word-bookmark? a)
-           (word-cross-structure-annotation (word-bookmark-id a) (cadr (word-bookmark-tag a))
+           (word-cross-structure-annotation (word-bookmark-id a) (word-bookmark-key (cadr (word-bookmark-tag a)))
                                             'w:bookmarkStart 'w:bookmarkEnd
                                             (word-bookmark-content a))]
           [else (list (word-run/unrecognized a))])))
@@ -154,30 +160,64 @@
 
 (define word-paragraph->runs : (-> Word-Paragraph (Listof Xexpr))
   (lambda [p]
-    (word-contents->runs (word-paragraph-content p))))
+    (word-content->runs (word-paragraph-content p))))
+
+(define word-hyperlink->field : (-> Word-Hyperlink (Listof Xexpr))
+  (lambda [hl]
+    (define tag (word-hyperlink-tag hl))
+    (define anchor (word-bookmark-key (cadr tag)))
+    
+    (word-complex-field (string-append "REF " anchor " \\h")
+                        (word-hyperlink-content hl))))
 
 (define word-hyperlink->run : (-> Word-Hyperlink Xexpr)
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
-    (define anchor (cadr tag))
+    (define anchor (word-bookmark-key (cadr tag)))
     
     (list 'w:hyperlink `([w:anchor . ,anchor]
                          [w:history . "true"]
                          [w:tooltip . ,(format "[~a] ~a" (car tag) anchor)])
           (list (list 'w:r null
-                      (word-contents->runs (word-hyperlink-content hl)))))))
+                      (word-content->runs (word-hyperlink-content hl)))))))
 
-(define word-contents->runs : (-> (Listof Word-Run-Content) (Listof Xexpr))
+(define word-content->runs : (-> (U Word-Run-Content (Listof Word-Run-Content)) (Listof Xexpr))
   (lambda [cs]
     (apply append
-           (for/list : (Listof (Listof Xexpr)) ([c (in-list cs)])
+           (for/list : (Listof (Listof Xexpr)) ([c (if (list? cs) (in-list cs) (in-value cs))])
              (if (Word-Annotation? c)
                  (word-annotation->xexpr c)
-                 (list (word-run->xexpr c)))))))
+                 (word-run->xexpr c))))))
+
+(define word-contents->run : (->* ((U Word-Run-Content (Listof Word-Run-Content))) (Style-Name Style-Properties #:w:tag Symbol) Xexpr)
+  (lambda [t [style #false] [properties null] #:w:tag [w:t 'w:t]]
+    (list 'w:r null
+          (apply append
+                 (for/list : (Listof (Listof Xexpr)) ([rc (if (list? t) (in-list t) (in-value t))])
+                   (cond [(string? rc) (list (word-text rc #:w:tag w:t))]
+                         [(Word-Annotation? rc) (word-annotation->xexpr rc)]
+                         [else (word-run->xexpr rc)]))))))
 
 (define word-style-xexpr : (-> String Xexpr)
   (lambda [style]
     `(w:pPr () ((w:pStyle ([w:val . ,style]))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Fields. Fundamentals and Markup Language Reference 17.16.2
+(define word-simple-field : (-> String (U Word-Run-Content (Listof Word-Run-Content)) Xexpr)
+  (lambda [instr fldvalues]
+    (list 'w:fldSimple `([w:instr . ,instr])
+          (word-content->runs fldvalues))))
+
+; TODO: fields can be nested
+(define word-complex-field : (-> (U String (Listof String)) (U Word-Run-Content (Listof Word-Run-Content)) (Listof Xexpr))
+  (lambda [instrs fldvalues]
+    (append (list '(w:r () ((w:fldChar ([w:fldCharType . "begin"])))))
+            (for/list : (Listof Xexpr) ([instr (if (list? instrs) (in-list instrs) (in-value instrs))])
+              (word-contents->run instr #:w:tag 'w:instrText))
+            (list '(w:r () ((w:fldChar ([w:fldCharType . "separate"])))))
+            (word-content->runs fldvalues)
+            (list '(w:r () ((w:fldChar ([w:fldCharType . "end"]))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Annotations. Primer 2.14
@@ -186,10 +226,22 @@
     (define id-v (symbol->immutable-string id))
     
     (append (list `(,tag-start ([w:id . ,id-v] [w:name . ,name])))
-            (word-contents->runs cs)
+            (word-content->runs cs)
             (list `(,tag-end ([w:id . ,id-v]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define word-text : (-> String [#:w:tag Symbol] Xexpr)
+  (lambda [t #:w:tag [w:t 'w:t]]
+    (cond [(string=? t "") `(,w:t () (,t))]
+          [(char-blank? (string-ref t 0)) `(,w:t ([xml:space "preserve"]) (,t))]
+          [(char-blank? (string-ref t (sub1 (string-length t)))) `(,w:t ([xml:space "preserve"]) (,t))]
+          [else `(,w:t () (,t))])))
+
 (define word-run/unrecognized : (-> Any Xexpr)
   (lambda [v]
-    (list 'w:r null (list (list 'w:t null (list (format "~s" v)))))))
+    (word-contents->run (format "~s" v))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define word-bookmark-key : (-> String String)
+  (lambda [name]
+    (string-replace name " " "-")))

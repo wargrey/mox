@@ -209,7 +209,8 @@
             [(link-element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))]
                           [(cs tag) (values (element-content c) (link-element-tag c))])
-               (list (word-hyperlink (render-content (cond [(not (null? cs)) cs]
+               (list (word-hyperlink (gensym (car tag))
+                                     (render-content (cond [(not (null? cs)) cs]
                                                            [else (let ([v (resolve-get part ri tag)])
                                                                    (if (vector? v)
                                                                        (strip-aux (or (vector-ref v 0) "???"))
@@ -218,6 +219,7 @@
                                      (tag-key tag ri) sn sp)))]
             [(element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))])
+               (dtrace-debug "~a" (word-run-texts (render-content (element-content c) part ri) sn sp))
                (when (render-element? c) ((render-element-render c) this part ri))
                (list (word-run-texts (render-content (element-content c) part ri) sn sp)))]
             [(multiarg-element? c)
@@ -310,6 +312,5 @@
       (set-box! &authors null))
     
     (define (render-text t part ri)
-      (list (word-run-text (cond [(string? t) t]
-                                 [else (~s t)])
-                           #false null)))))
+      (list (cond [(string? t) t]
+                  [else (~s t)])))))
