@@ -6,6 +6,7 @@
 (require racket/string)
 
 (require digimon/archive)
+(require digimon/format)
 
 (require sgml/xexpr)
 
@@ -104,6 +105,7 @@
                               (opc-part-name-normalize/zip part-name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Paragraph
 (define word-section->xexpr : (-> Word-Section Xexpr)
   (lambda [s]
     (define attlist (word-paragraph->attlist s))
@@ -117,7 +119,7 @@
             [else (string-append "Heading" (number->string depth))]))
 
     (list 'w:p attlist
-          (cons (word-style-xexpr p:style)
+          (cons (word-paragraph-style-xexpr p:style)
                 runs))))
 
 (define word-paragraph->xexpr : (-> Word-Paragraph Xexpr)
@@ -131,9 +133,23 @@
             [else "Normal"]))
     
     (list 'w:p attlist
-          (cons (word-style-xexpr p:style)
+          (cons (word-paragraph-style-xexpr p:style)
                 runs))))
 
+(define word-paragraph-style-xexpr : (-> String Xexpr)
+  (lambda [style]
+    `(w:pPr () ((w:pStyle ([w:val . ,style]))))))
+
+(define word-paragraph->attlist : (-> Word-Paragraph Xexpr-AttList)
+  (lambda [p]
+    null))
+
+(define word-paragraph->runs : (-> Word-Paragraph (Listof Xexpr))
+  (lambda [p]
+    (word-content->runs (word-paragraph-content p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Run and Run Content
 (define word-run->xexpr : (-> (U Word-Run String) (Listof Xexpr))
   (lambda [r]
     (cond [(string? r)
@@ -153,14 +169,17 @@
                                             (word-bookmark-content a))]
           [else (list (word-run/unrecognized a))])))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define word-paragraph->attlist : (-> Word-Paragraph Xexpr-AttList)
-  (lambda [p]
-    null))
-
-(define word-paragraph->runs : (-> Word-Paragraph (Listof Xexpr))
-  (lambda [p]
-    (word-content->runs (word-paragraph-content p))))
+(define word-run-style-xexpr : (-> Style-Name Style-Properties (Option Xexpr))
+  (lambda [style properties]
+    (cond [(string? style)
+           `(w:rPr () ((w:rStyle ([w:val . ,style]))))]
+          [(not style) #false]
+          [else (case style
+                  [(italic)      `(w:rPr () ((w:i)))]
+                  [(bold)        `(w:rPr () ((w:b)))]
+                  [(subscript)   `(w:rPr () ((w:vertAlign ([w:val . "subscript"]))))]
+                  [(superscript) `(w:rPr () ((w:vertAlign ([w:val . "superscript"]))))]
+                  [else #false])])))
 
 (define word-hyperlink->field : (-> Word-Hyperlink (Listof Xexpr))
   (lambda [hl]
@@ -174,10 +193,11 @@
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
     (define anchor (word-bookmark-key (cadr tag)))
+    (define ?tooltip (findf hover-property? (word-hyperlink-style-properties hl)))
     
     (list 'w:hyperlink `([w:anchor . ,anchor]
                          [w:history . "true"]
-                         [w:tooltip . ,(format "[~a] ~a" (car tag) anchor)])
+                         [w:tooltip . ,(if (hover-property? ?tooltip) (hover-property-text ?tooltip) (format "[~a] ~a" (car tag) anchor))])
           (list (list 'w:r null
                       (word-content->runs (word-hyperlink-content hl)))))))
 
@@ -193,14 +213,15 @@
   (lambda [t [style #false] [properties null] #:w:tag [w:t 'w:t]]
     (list 'w:r null
           (apply append
+                 (let ([pstyle (word-run-style-xexpr style properties)])
+                   (cond [(not pstyle) null]
+                         [else (list pstyle)]))
                  (for/list : (Listof (Listof Xexpr)) ([rc (if (list? t) (in-list t) (in-value t))])
-                   (cond [(string? rc) (list (word-text rc #:w:tag w:t))]
-                         [(Word-Annotation? rc) (word-annotation->xexpr rc)]
-                         [else (word-run->xexpr rc)]))))))
-
-(define word-style-xexpr : (-> String Xexpr)
-  (lambda [style]
-    `(w:pPr () ((w:pStyle ([w:val . ,style]))))))
+                   (cond [(Word-Annotation? rc) (word-annotation->xexpr rc)]
+                         [(Word-Run? rc) (word-run->xexpr rc)]
+                         [(eq? style 'hspace) (list (word-text (~space (string-length rc)) #:w:tag w:t))]
+                         [(eq? style 'newline) (list word-br)]
+                         [else (list (word-text rc #:w:tag w:t))]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fields. Fundamentals and Markup Language Reference 17.16.2
@@ -230,6 +251,8 @@
             (list `(,tag-end ([w:id . ,id-v]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define word-br : Xexpr `(w:br))
+
 (define word-text : (-> String [#:w:tag Symbol] Xexpr)
   (lambda [t #:w:tag [w:t 'w:t]]
     (cond [(string=? t "") `(,w:t () (,t))]

@@ -11,7 +11,8 @@
 
 (require/typed/provide
  scribble/html-properties
- [#:struct body-id ([value : String]) #:extra-constructor-name make-body-id])
+ [#:struct body-id ([value : String]) #:extra-constructor-name make-body-id]
+ [#:struct hover-property ([text : String]) #:extra-constructor-name make-hover-property])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type Style-Name (U String Symbol False))
