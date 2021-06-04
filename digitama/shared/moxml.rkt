@@ -2,11 +2,6 @@
 
 (provide (all-defined-out))
 
-(require racket/port)
-(require racket/symbol)
-
-(require sgml/digitama/document)
-(require sgml/digitama/namespace)
 (require sgml/digitama/plain/sax)
 
 (require "property.rkt")

@@ -86,7 +86,7 @@
                           (opc-relationships-markup-entry
                            (car main-part) ; document.xml relationship
                            (map opc-make-internal-relationship
-                                (list style-part font-part theme-part
+                                (list style-part theme-part font-part
                                       footnote-part endnote-part
                                       settings-part websettings-part)))
                           (opc-word-document-markup-entry (car main-part) docblocks)

@@ -26,7 +26,7 @@ this content refers to the @tech{story}.
 
 this content refers to the @tech{main document}.
 
-@handbook-smart-table[]
+@;handbook-smart-table[]
 
 @handbook-appendix[#:index-section? #true
  (url-bib-entry "OpenXML" "Standard ECMA-376: Office Open XML File Formats"

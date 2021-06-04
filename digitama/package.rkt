@@ -5,8 +5,6 @@
 (require racket/port)
 (require racket/symbol)
 
-(require digimon/dtrace)
-
 (require sgml/digitama/plain/sax)
 
 (require typed/racket/unsafe)

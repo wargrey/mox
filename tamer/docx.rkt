@@ -26,4 +26,5 @@
 
 (mox-drawingml-theme drawing.ml)
 
+(word-document-styles main.ml)
 (word-document-entry main.ml)
