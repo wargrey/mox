@@ -7,6 +7,7 @@
 
 (require digimon/archive)
 (require digimon/format)
+(require digimon/dtrace)
 
 (require sgml/xexpr)
 
@@ -19,46 +20,41 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type Word-Run-Content (U Word-Run Word-Annotation String))
 
-(struct Word-Block ())
-(struct Word-Run ())
-(struct Word-Annotation ())
+(struct word-style
+  ([name : Style-Name]
+   [properties : Style-Properties])
+  #:type-name Word-Style
+  #:transparent)
+
+(struct Word-Block word-style ())
+(struct Word-Run word-style ())
+(struct Word-Annotation word-style ())
 
 (struct word-bookmark Word-Annotation
-  ([id : Symbol]
+  ([id : Integer]
    [content : (Listof Word-Run-Content)]
-   [tag : (List Symbol String)]
-   [style : Style-Name]
-   [properties : Style-Properties])
+   [tag : (List Symbol String)])
   #:type-name Word-Bookmark
   #:transparent)
 
 (struct word-run-text Word-Run
-  ([content : String]
-   [style-name : (U String Symbol False)]
-   [style-properties : Style-Properties])
+  ([content : String])
   #:type-name Word-Run-Text
   #:transparent)
 
 (struct word-run-texts Word-Run
-  ([contents : (Listof Word-Run-Content)]
-   [style-name : Style-Name]
-   [style-properties : Style-Properties])
+  ([contents : (Listof Word-Run-Content)])
   #:type-name Word-Run-Texts
   #:transparent)
 
 (struct word-hyperlink Word-Run
-  ([field-id : Symbol]
-   [content : (Listof Word-Run-Content)]
-   [tag : (List Symbol String)]
-   [style-name : Style-Name]
-   [style-properties : Style-Properties])
+  ([content : (Listof Word-Run-Content)]
+   [tag : (List Symbol String)])
   #:type-name Word-Hyperlink
   #:transparent)
 
 (struct word-paragraph Word-Block
-  ([content : (Listof Word-Run-Content)]
-   [style-name : Style-Name]
-   [style-properties : Style-Properties])
+  ([content : (Listof Word-Run-Content)])
   #:type-name Word-Paragraph
   #:transparent)
 
@@ -69,17 +65,17 @@
   #:type-name Word-Section
   #:transparent)
 
+(struct word-list Word-Block
+  ([items : (Listof Word-Block)])
+  #:type-name Word-List
+  #:transparent)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-word-document-markup-entry : (->* (String (Listof Word-Block)) (#:utc Integer) Archive-Entry)
   (lambda [part-name docblocks #:utc [ts #false]]
-    (define body : (Listof Xexpr)
-      (for/list : (Listof Xexpr) ([db (in-list docblocks)])
-        (cond [(word-section? db) (word-section->xexpr db)]
-              [(word-paragraph? db) (word-paragraph->xexpr db)]
-              [else (list 'w:p null (list (word-run/unrecognized db)))])))
-    
     (define story : Xexpr
       (list 'w:document
+
             (append `([xmlns:w . ,(assert (opc-xmlns 'Docx:W))]
                       [xmlns:w10 . ,(assert (opc-xmlns 'Docx:W10))]
                       [xmlns:w14 . ,(assert (opc-xmlns 'Docx:W14))]
@@ -98,19 +94,38 @@
                       [xmlns:wne . ,(assert (opc-xmlns 'Docx:WNE))])
                     (mox-drawing-xmlns)
                     (mox-compatibility-xmlns))
-            (list (list 'w:body null body))))
+            
+            (list (list 'w:body null
+                        (word-blocks->xexprs docblocks)))))
     
     (make-archive-ascii-entry #:utc-time ts #:comment "Primer 2.3, 2006"
                               (xexpr->bytes story #:prolog? #true)
                               (opc-part-name-normalize/zip part-name))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Paragraph
+;;; Blocks
+(define word-blocks->xexprs : (-> (Listof Word-Block) (Listof Xexpr))
+  (lambda [blocks]
+    (apply append (map word-block->xexpr blocks))))
+
+(define word-block->xexpr : (->* (Word-Block) (Natural) (Listof Xexpr))
+  (lambda [db [indent 0]]
+    (cond [(word-section? db) (list (word-section->xexpr db))]
+          [(word-paragraph? db) (list (word-paragraph->xexpr (word-paragraph-content db) (word-style-name db) (word-style-properties db)))]
+          [(word-list? db)
+           (apply append
+                  (for/list : (Listof (Listof Xexpr)) ([item (in-list (word-list-items db))])
+                    (cond [(word-paragraph? item)
+                           (list (word-paragraph->xexpr (word-paragraph-content item) "ListParagraph" (word-style-properties item)
+                                                        (list (word-list-paragraph-style-xexpr (word-style-name item) indent))))]
+                          [(word-list? item)
+                           (word-block->xexpr item (+ indent (if (memq 'never-indents (word-style-properties item)) 0 1)))]
+                          [else (word-block->xexpr item indent)])))]
+          [else (list (list 'w:p null (list (word-run/unrecognized db))))])))
+
 (define word-section->xexpr : (-> Word-Section Xexpr)
   (lambda [s]
-    (define attlist (word-paragraph->attlist s))
-    (define runs (word-paragraph->runs s))
-    (define sname (word-paragraph-style-name s))
+    (define sname (word-style-name s))
     (define depth (word-section-depth s))
 
     (define p:style
@@ -118,35 +133,26 @@
             [(eq? depth 0) "Title"]
             [else (string-append "Heading" (number->string depth))]))
 
-    (list 'w:p attlist
-          (cons (word-paragraph-style-xexpr p:style)
-                runs))))
+    (word-paragraph->xexpr (word-paragraph-content s) p:style (word-style-properties s))))
 
-(define word-paragraph->xexpr : (-> Word-Paragraph Xexpr)
-  (lambda [p]
-    (define attlist (word-paragraph->attlist p))
-    (define runs (word-paragraph->runs p))
-    (define sname (word-paragraph-style-name p))
-
+(define word-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties (Listof Xexpr)) Xexpr)
+  (lambda [pc [style #false] [properties null] [additions null]]
     (define p:style
-      (cond [(string? sname) sname]
+      (cond [(string? style) style]
             [else "Normal"]))
     
-    (list 'w:p attlist
+    (list 'w:p null
           (cons (word-paragraph-style-xexpr p:style)
-                runs))))
+                (append additions (word-content->runs pc))))))
 
 (define word-paragraph-style-xexpr : (-> String Xexpr)
   (lambda [style]
     `(w:pPr () ((w:pStyle ([w:val . ,style]))))))
 
-(define word-paragraph->attlist : (-> Word-Paragraph Xexpr-AttList)
-  (lambda [p]
-    null))
-
-(define word-paragraph->runs : (-> Word-Paragraph (Listof Xexpr))
-  (lambda [p]
-    (word-content->runs (word-paragraph-content p))))
+(define word-list-paragraph-style-xexpr : (-> Style-Name Natural Xexpr)
+  (lambda [style indent]
+    `(w:numPr () ((w:ilvl  ([w:val . ,(number->string indent)]) ())
+                  (w:numId ([w:val . ,(if (eq? style 'ordered) "1" "3")]) ())))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Run and Run Content
@@ -155,9 +161,9 @@
     (cond [(string? r)
            (list (word-contents->run r))]
           [(word-run-text? r)
-           (list (word-contents->run (word-run-text-content r) (word-run-text-style-name r) (word-run-text-style-properties r)))]
+           (list (word-contents->run (word-run-text-content r) (word-style-name r) (word-style-properties r)))]
           [(word-run-texts? r)
-           (list (word-contents->run (word-run-texts-contents r) (word-run-texts-style-name r) (word-run-texts-style-properties r)))]
+           (list (word-contents->run (word-run-texts-contents r) (word-style-name r) (word-style-properties r)))]
           [(word-hyperlink? r) (word-hyperlink->field r)]
           [else (list (word-run/unrecognized r))])))
 
@@ -193,7 +199,7 @@
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
     (define anchor (word-bookmark-key (cadr tag)))
-    (define ?tooltip (findf hover-property? (word-hyperlink-style-properties hl)))
+    (define ?tooltip (findf hover-property? (word-style-properties hl)))
     
     (list 'w:hyperlink `([w:anchor . ,anchor]
                          [w:history . "true"]
@@ -211,6 +217,7 @@
 
 (define word-contents->run : (->* ((U Word-Run-Content (Listof Word-Run-Content))) (Style-Name Style-Properties #:w:tag Symbol) Xexpr)
   (lambda [t [style #false] [properties null] #:w:tag [w:t 'w:t]]
+    
     (list 'w:r null
           (apply append
                  (let ([pstyle (word-run-style-xexpr style properties)])
@@ -242,9 +249,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Annotations. Primer 2.14
-(define word-cross-structure-annotation : (-> Symbol String Symbol Symbol (Listof Word-Run-Content) (Listof Xexpr))
+(define word-cross-structure-annotation : (-> Integer String Symbol Symbol (Listof Word-Run-Content) (Listof Xexpr))
   (lambda [id name tag-start tag-end cs]
-    (define id-v (symbol->immutable-string id))
+    (define id-v (number->string id))
     
     (append (list `(,tag-start ([w:id . ,id-v] [w:name . ,name])))
             (word-content->runs cs)

@@ -18,6 +18,7 @@
 (require "docx/app.rkt")
 (require "docx/style.rkt")
 (require "docx/misc.rkt")
+(require "docx/datatype.rkt")
 
 (require "docx/story/document.rkt")
 
@@ -106,27 +107,35 @@
       (dtrace-debug #:topic docx-render-mode
                     "§[~a]: ~a" depth (content->string c))
       
-      (cons (word-section (if (not c) null (render-content c p ri)) sn sp
+      (cons (word-section sn sp (if (not c) null (render-content c p ri))
                           (current-tag-prefixes) (link-render-style-mode (current-link-render-style))
                           depth)
 
             (apply append
                    (render-flow (part-blocks p) p ri #f)
-                   (map (lambda (s) (render-part s ri))
+                   (map (lambda [s] (render-part s ri))
                         (part-parts p)))))
 
     (define/override (render-paragraph p part ri)
+      (define-values (sn sp) (scribble-style->values (paragraph-style p)))
       (define c (paragraph-content p))
-      (define s (paragraph-style p))
-      (define-values (sn sp) (scribble-style->values s))
 
       (when (and (eq? sn 'author) c)
         (set-box! &authors
                   (cons (content->string c)
                         (unbox &authors))))
       
-      (list (word-paragraph (if (not c) null (render-content c part ri)) sn sp)))
-    
+      (list (word-paragraph sn sp (if (not c) null (render-content c part ri)))))
+
+    (define/override (render-itemization i part ht)
+      (let ([flows (itemization-blockss i)])
+        (cond [(null? flows) null]
+              [else (let-values ([(sn sp) (scribble-style->values (itemization-style i))])
+                      (list (word-list sn sp
+                                       (append* (render-flow (car flows) part ht #t)
+                                                (for/list ([d (in-list (cdr flows))])
+                                                  (render-flow d part ht #f))))))])))
+
     (define/override (render-table i part ht inline?)
       (define flowss (table-blockss i))
 
@@ -185,17 +194,6 @@
             #t)])
       null)
 
-    (define/override (render-itemization i part ht)
-      (let ([flows (itemization-blockss i)])
-        (if (null? flows)
-            null
-            (append*
-             (begin (printf "* ")
-                    (render-flow (car flows) part ht #t))
-             (for/list ([d (in-list (cdr flows))])
-               (printf "* ")
-               (render-flow d part ht #f))))))
-
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (define/override (render-content c part ri)
       (cond [(string? c) (render-text c part ri)]
@@ -203,25 +201,24 @@
             [(target-element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))]
                           [(cs tag) (values (element-content c) (target-element-tag c))])
-               (list (word-bookmark (gensym (car tag))
+               (list (word-bookmark sn sp (st-decimal-number)
                                     (render-content cs part ri)
-                                    (tag-key tag ri) sn sp)))]
+                                    (tag-key tag ri))))]
             [(link-element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))]
                           [(cs tag) (values (element-content c) (link-element-tag c))])
-               (list (word-hyperlink (gensym (car tag))
+               (list (word-hyperlink sn sp
                                      (render-content (cond [(not (null? cs)) cs]
                                                            [else (let ([v (resolve-get part ri tag)])
                                                                    (if (vector? v)
                                                                        (strip-aux (or (vector-ref v 0) "???"))
                                                                        (list "[missing]")))])
                                                      part ri)
-                                     (tag-key tag ri) sn sp)))]
+                                     (tag-key tag ri))))]
             [(element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))])
-               (dtrace-debug "~a" (word-run-texts (render-content (element-content c) part ri) sn sp))
                (when (render-element? c) ((render-element-render c) this part ri))
-               (list (word-run-texts (render-content (element-content c) part ri) sn sp)))]
+               (list (word-run-texts sn sp (render-content (element-content c) part ri))))]
             [(multiarg-element? c)
              (let-values ([(sn sp) (scribble-style->values (multiarg-element-style c))])
                (list (render-content (multiarg-element-contents c) part ri)))]
@@ -309,7 +306,8 @@
     (define &authors (box null))
 
     (define (start-render)
-      (set-box! &authors null))
+      (set-box! &authors null)
+      (datatype-reset!))
     
     (define (render-text t part ri)
       (list (cond [(string? t) t]
