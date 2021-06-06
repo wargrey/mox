@@ -101,15 +101,18 @@
 
     (define/override (render-part-content p ri)
       (define c (part-title-content p))
-      (define depth (number-depth (collected-info-number (part-collected-info p ri))))
+      (define number (collected-info-number (part-collected-info p ri)))
+      (define numseqs (format-number number '()))
+      (define depth (number-depth number))
       (define-values (sn sp) (scribble-style->values (part-style p)))
-      
-      (dtrace-debug #:topic docx-render-mode
-                    "§[~a]: ~a" depth (content->string c))
+
+      (if (null? numseqs)
+          (dtrace-debug #:topic docx-render-mode "§[~a]: ~a" depth (content->string c))
+          (dtrace-debug #:topic docx-render-mode "§~a. ~a" (car numseqs) (content->string c)))
       
       (cons (word-section sn sp (if (not c) null (render-content c p ri))
                           (current-tag-prefixes) (link-render-style-mode (current-link-render-style))
-                          depth)
+                          numseqs (number-depth number))
 
             (apply append
                    (render-flow (part-blocks p) p ri #f)
@@ -136,6 +139,13 @@
                                                 (for/list ([d (in-list (cdr flows))])
                                                   (render-flow d part ht #f))))))])))
 
+    (define/override (render-nested-flow nf part ri starting-item?)
+      (define-values (sn sp) (scribble-style->values (nested-flow-style nf)))
+      
+      (list (word-nested-flow (if (equal? sn "SCentered") 'center sn) sp
+                              (apply append
+                                     (super render-nested-flow nf part ri starting-item?)))))
+    
     (define/override (render-table i part ht inline?)
       (define flowss (table-blockss i))
 
@@ -273,14 +283,6 @@
 
     (define (sanitize-parens str)
       (regexp-replace #rx"[\\(\\)]" str "\\&"))
-
-    (define/override (render-nested-flow i part ri starting-item?)
-      (define s (nested-flow-style i))
-      (unless (memq 'decorative (style-properties s))
-        (define note? (equal? (style-name s) "refcontent"))
-        (define toc? (equal? (style-name s) 'table-of-contents))
-
-        (super render-nested-flow i part ri starting-item?)))
 
     (define/override (table-of-contents part ri)
       (define t (super table-of-contents part ri))

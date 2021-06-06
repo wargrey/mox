@@ -20,11 +20,11 @@ x@subscript{1}@superscript{2} @emph{emph} @tt{tt}.
 
 @section{Heading 1}
 
-this content refers to the @tech{story}.
+@centered{this content refers to the @tech{story}.}
 
 @subsection{Heading 2}
 
-this content refers to the @tech{main document}.
+@centered{this content refers to the @tech{main document}.}
 
 @;handbook-smart-table[]
 

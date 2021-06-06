@@ -61,6 +61,7 @@
 (struct word-section word-paragraph
   ([tag-prefixes : (Listof String)]
    [link-render-style : Symbol]
+   [numseqs : (Listof String)]
    [depth : Natural])
   #:type-name Word-Section
   #:transparent)
@@ -68,6 +69,11 @@
 (struct word-list Word-Block
   ([items : (Listof Word-Block)])
   #:type-name Word-List
+  #:transparent)
+
+(struct word-nested-flow Word-Block
+  ([blocks : (Listof Word-Block)])
+  #:type-name Word-Nested-Flow
   #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,22 +124,32 @@
                     (cond [(word-paragraph? item)
                            (list (word-paragraph->xexpr (word-paragraph-content item) "ListParagraph" (word-style-properties item)
                                                         (list (word-list-paragraph-style-xexpr (word-style-name item) indent))))]
-                          [(word-list? item)
-                           (word-block->xexpr item (+ indent (if (memq 'never-indents (word-style-properties item)) 0 1)))]
+                          [(word-list? item) (word-block->xexpr item (+ indent 1))]
                           [else (word-block->xexpr item indent)])))]
+          [(word-nested-flow? db)
+           (apply append
+                  (for/list : (Listof (Listof Xexpr)) ([block (in-list (word-nested-flow-blocks db))])
+                    (cond [(word-paragraph? block)
+                           (list (word-nested-paragraph->xexpr (word-paragraph-content block) (word-style-name db) (word-style-properties db)))]
+                          [(word-nested-flow? block) (word-block->xexpr block (+ indent 1))]
+                          [else (word-block->xexpr block indent)])))]
           [else (list (list 'w:p null (list (word-run/unrecognized db))))])))
 
 (define word-section->xexpr : (-> Word-Section Xexpr)
   (lambda [s]
     (define sname (word-style-name s))
     (define depth (word-section-depth s))
+    (define numseqs (word-section-numseqs s))
+    (define content (word-paragraph-content s))
 
     (define p:style
       (cond [(string? sname) sname]
             [(eq? depth 0) "Title"]
             [else (string-append "Heading" (number->string depth))]))
 
-    (word-paragraph->xexpr (word-paragraph-content s) p:style (word-style-properties s))))
+    (word-paragraph->xexpr (cond [(null? numseqs) content]
+                                 [else (list* (car numseqs) ". " content)])
+                           p:style (word-style-properties s))))
 
 (define word-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties (Listof Xexpr)) Xexpr)
   (lambda [pc [style #false] [properties null] [additions null]]
@@ -145,6 +161,12 @@
           (cons (word-paragraph-style-xexpr p:style)
                 (append additions (word-content->runs pc))))))
 
+(define word-nested-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties Natural) Xexpr)
+  (lambda [pc [style #false] [properties null] [indent 0]]
+    (list 'w:p null
+          (cons (word-nested-paragraph-style-xexpr style indent)
+                (word-content->runs pc)))))
+
 (define word-paragraph-style-xexpr : (-> String Xexpr)
   (lambda [style]
     `(w:pPr () ((w:pStyle ([w:val . ,style]))))))
@@ -153,6 +175,20 @@
   (lambda [style indent]
     `(w:numPr () ((w:ilvl  ([w:val . ,(number->string indent)]) ())
                   (w:numId ([w:val . ,(if (eq? style 'ordered) "1" "3")]) ())))))
+
+(define word-nested-paragraph-style-xexpr : (-> Style-Name Natural Xexpr)
+  (lambda [style indent]
+    (define w:wnd : (Listof Xexpr)
+      (cond [(<= indent 0) null]
+            [else (list (list 'w:wnd `([w:left . ,(number->string (* indent 360))])))]))
+
+    (define w:jc : (Listof Xexpr)
+      (case style
+        [(center left right both distribute end highKashida lowKashida)
+         (list (list 'w:jc `([w:val . ,(symbol->immutable-string style)])))]
+        [else null]))
+    
+    (list 'w:pPr null (append w:wnd w:jc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Run and Run Content
