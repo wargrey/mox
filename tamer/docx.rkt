@@ -24,8 +24,8 @@
 (mox-sharedml-properties shared.ml)
 (mox-package-orphans docx.zip)
 
-(mox-drawingml-theme drawing.ml)
-
 (word-document-styles main.ml)
 (word-document-numbering main.ml)
 (word-document-entry main.ml)
+
+(mox-drawingml-theme drawing.ml)

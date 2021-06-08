@@ -4,10 +4,10 @@
 
 @mox-handbook-title/pkg-desc[#:category "Handbook" #:status "Draft" #:type "Manual"]
 
-There is a hspace(@elem[#:style 'hspace]{hspace}) element here,
-followed by a newline @elem[#:style 'newline]{hspace} element.
+@nested[#:style 'inset]{There is a hspace(@elem[#:style 'hspace]{hspace}) element here,
+ followed by a newline @elem[#:style 'newline]{hspace} element.
 
-x@subscript{1}@superscript{2} @emph{emph} @tt{tt}.
+ x@subscript{1}@superscript{2} @emph{emph} @tt{tt}.}
 
 @itemlist[
  #:style 'compact

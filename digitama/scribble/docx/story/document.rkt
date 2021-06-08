@@ -178,17 +178,39 @@
 
 (define word-nested-paragraph-style-xexpr : (-> Style-Name Natural Xexpr)
   (lambda [style indent]
-    (define w:wnd : (Listof Xexpr)
-      (cond [(<= indent 0) null]
-            [else (list (list 'w:wnd `([w:left . ,(number->string (* indent 360))])))]))
+    (define w:border : (Listof Xexpr)
+      (list (list 'w:pBdr null
+                              '((w:top ([w:val . "single"]
+                                        [w:sz . "12"]
+                                        [w:space . "1"]
+                                        [w:color . "FF0000"]))
+                                (w:bottom ([w:val . "single"]
+                                           [w:sz . "12"]
+                                           [w:space . "1"]
+                                           [w:color . "FF0000"]))
+                                (w:left ([w:val . "single"]
+                                         [w:sz . "12"]
+                                         [w:space . "4"]
+                                         [w:color . "FF0000"]))
+                                (w:right ([w:val . "single"]
+                                          [w:sz . "12"]
+                                          [w:space . "4"]
+                                          [w:color . "FF0000"]))
+                                (w:between ([w:val . "single"]
+                                            [w:sz . "24"]
+                                            [w:space . "4"]
+                                            [w:color . "4D5D2C"]))))))
 
-    (define w:jc : (Listof Xexpr)
+    (define w:position : (Listof Xexpr)
       (case style
+        [(inset code-inset)
+         (list (list 'w:ind `([w:left . ,(number->string (* (add1 indent) 360))]
+                              [w:right . ,(number->string (* (add1 indent) 360))])))]
         [(center left right both distribute end highKashida lowKashida)
          (list (list 'w:jc `([w:val . ,(symbol->immutable-string style)])))]
         [else null]))
     
-    (list 'w:pPr null (append w:wnd w:jc))))
+    (list 'w:pPr null (append w:border w:position))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Run and Run Content
