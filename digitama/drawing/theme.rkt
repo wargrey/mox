@@ -5,35 +5,40 @@
 (require digimon/struct)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-type MOX-Percentage (U Nonnegative-Fixnum Nonnegative-Flonum))
+
 (define-type MOX-System-Color-Datum (U String (Pairof String Index)))
 (define-type MOX-Scheme-Color-Datum (U 'accent1 'accent2 'accent3 'accent4 'accent5 'accent6
                                        'bg1 'bg2 'dk1 'dk2 'lt1 'lt2 'tx1 'tx2 'hlink 'folHlink
                                        'phClr #| use the style color |#))
-(define-type MOX-Gradient-Fill-Flip (U 'none 'x 'xy 'y))
-(define-type MOX-Gradient-Fill-Angle (U Nonnegative-Flonum (Boxof Nonnegative-Flonum #| with #true as the `scaled` |#)))
-(define-type MOX-Gradient-Fill-Path (U 'circle 'rect 'shape))
 
 ;; NOTE
 ; Other color representations, such as hslClr, prstClr, and scrgbClr,
 ; should be transformed into instances of srgbClr before using
 
-(define-type MOX-Color-Datum (U Index MOX-System-Color-Datum MOX-Color-Transform))
-(define-type MOX-Font-Scripts (HashTable Symbol String))
+(define-type MOX-Color-Datum (U Index MOX-System-Color-Datum))
+(define-type MOX-Color-Datum2 (U MOX-Color-Datum MOX-Scheme-Color-Datum))
 
-(define-type MOX-Solid-Fill-Datum (U MOX-Color-Datum MOX-Scheme-Color-Datum))
-(define-type MOX-Fill-Datum (U False MOX-Solid-Fill-Datum))
+(define-type MOX-Gradient-Fill-Flip (U 'none 'x 'xy 'y))
+(define-type MOX-Gradient-Fill-Angle (U MOX-Percentage (Boxof MOX-Percentage #| with #true as the `scaled` |#)))
+(define-type MOX-Gradient-Fill-Path (U 'circle 'rect 'shape))
+
+(define-type MOX-Solid-Fill-Datum (U MOX-Color-Datum2 MOX-Color-Transform))
+(define-type MOX-Fill-Datum (U False MOX-Solid-Fill-Datum MOX-Gradient-Fill))
+
+(define-type MOX-Font-Scripts (HashTable Symbol String))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; These values are borrowed from the theme named "Facet"
 
 (define-struct mox-color-alter : MOX-Color-Alter
-  ([value : Nonnegative-Flonum +nan.0]
-   [modulation : Nonnegative-Flonum +nan.0]
-   [offset : Nonnegative-Flonum +nan.0])
+  ([value : Flonum +nan.0]
+   [modulation : MOX-Percentage +nan.0]
+   [offset : Flonum +nan.0])
   #:transparent)
 
 (define-struct mox-color-transform : MOX-Color-Transform
-  ([color : MOX-Color-Datum]
+  ([color : MOX-Color-Datum2]
    [alpha : MOX-Color-Alter #%mox-intact-color]
    [red : MOX-Color-Alter #%mox-intact-color]
    [green : MOX-Color-Alter #%mox-intact-color]
@@ -41,8 +46,8 @@
    [hue : MOX-Color-Alter #%mox-intact-color]
    [saturation : MOX-Color-Alter #%mox-intact-color]
    [luminance : MOX-Color-Alter #%mox-intact-color]
-   [tint : Nonnegative-Flonum +nan.0]   ; make the color lighter with (1.0 - tint) white
-   [shadow : Nonnegative-Flonum +nan.0] ; make the color darker with (1.0 - shadow) black
+   [tint : MOX-Percentage +nan.0]   ; make the color lighter with (1.0 - tint) white
+   [shadow : MOX-Percentage +nan.0] ; make the color darker with (1.0 - shadow) black
    [complement? : Boolean #false]
    [grayscale? : Boolean #false]
    [gamma? : Boolean #false]
@@ -78,15 +83,15 @@
 (define-struct mox-gradient-fill : MOX-Gradient-Fill
   ([flip : MOX-Gradient-Fill-Flip 'none]
    [rotation : Boolean #true]
-   [stops : (Listof (Pairof Nonnegative-Flonum MOX-Color-Datum))]
+   [stops : (Listof (Pairof MOX-Percentage MOX-Solid-Fill-Datum))]
    [style : (U MOX-Gradient-Fill-Angle MOX-Gradient-Fill-Path)])
   #:transparent)
 
 (define-struct mox-fill-style : MOX-Fill-Style
   ; Fundamentals and Markup Language Reference, 20.1.4.1.13
   ([subtle : MOX-Fill-Datum 'phClr]
-   [moderate : MOX-Fill-Datum #false]
-   [intense : MOX-Fill-Datum #false])
+   [moderate : MOX-Fill-Datum #%mox-moderate-gradient-fill]
+   [intense : MOX-Fill-Datum #%mox-intense-gradient-fill])
   #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,6 +109,15 @@
 (define #%mox-window : MOX-Color-Datum (cons "window" #xFFFFFF))
 
 (define #%mox-intact-color : MOX-Color-Alter (make-mox-color-alter))
+(define #%mox-moderate-gradient-stops : (Listof (Pairof MOX-Percentage MOX-Solid-Fill-Datum))
+  (list (cons 0 (make-mox-color-transform #:color 'phClr #:tint 65000 #:luminance (make-mox-color-alter #:modulation 110000)))
+        (cons 88000 (make-mox-color-transform #:color 'phClr #:tint 90000))))
+(define #%mox-intense-gradient-stops : (Listof (Pairof MOX-Percentage MOX-Solid-Fill-Datum))
+  (list (cons 0 (make-mox-color-transform #:color 'phClr #:tint 96000 #:luminance (make-mox-color-alter #:modulation 100000)))
+        (cons 78000 (make-mox-color-transform #:color 'phClr #:tint 90000))))
+
+(define #%mox-moderate-gradient-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:stops #%mox-moderate-gradient-stops #:style 5400000))
+(define #%mox-intense-gradient-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:stops #%mox-intense-gradient-stops #:style 5400000))
 
 (define #%mox-fonts : MOX-Font-Scripts
   (make-hasheq '((Jpan . "MS ゴシック")
