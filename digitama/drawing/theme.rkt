@@ -46,8 +46,8 @@
    [hue : MOX-Color-Alter #%mox-intact-color]
    [saturation : MOX-Color-Alter #%mox-intact-color]
    [luminance : MOX-Color-Alter #%mox-intact-color]
-   [tint : MOX-Percentage +nan.0]   ; make the color lighter with (1.0 - tint) white
-   [shadow : MOX-Percentage +nan.0] ; make the color darker with (1.0 - shadow) black
+   [tint : MOX-Percentage +nan.0]  ; make the color lighter with (1.0 - tint) white
+   [shade : MOX-Percentage +nan.0] ; make the color darker with (1.0 - shadow) black
    [complement? : Boolean #false]
    [grayscale? : Boolean #false]
    [gamma? : Boolean #false]
@@ -113,8 +113,8 @@
   (list (cons 0 (make-mox-color-transform #:color 'phClr #:tint 65000 #:luminance (make-mox-color-alter #:modulation 110000)))
         (cons 88000 (make-mox-color-transform #:color 'phClr #:tint 90000))))
 (define #%mox-intense-gradient-stops : (Listof (Pairof MOX-Percentage MOX-Solid-Fill-Datum))
-  (list (cons 0 (make-mox-color-transform #:color 'phClr #:tint 96000 #:luminance (make-mox-color-alter #:modulation 100000)))
-        (cons 78000 (make-mox-color-transform #:color 'phClr #:tint 90000))))
+  (list (cons 0 (make-mox-color-transform #:color 'phClr #:tint 96000 #:luminance (make-mox-color-alter #:modulation 104000)))
+        (cons 78000 (make-mox-color-transform #:color 'phClr #:shade 94000 #:luminance (make-mox-color-alter #:modulation 94000)))))
 
 (define #%mox-moderate-gradient-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:stops #%mox-moderate-gradient-stops #:style 5400000))
 (define #%mox-intense-gradient-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:stops #%mox-intense-gradient-stops #:style 5400000))

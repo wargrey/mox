@@ -6,7 +6,6 @@
 
 (require racket/class)
 (require racket/list)
-(require racket/string)
 (require racket/format)
 
 (require file/convertible)
