@@ -212,7 +212,7 @@
                           [(cs tag) (values (element-content c) (target-element-tag c))])
                (list (word-bookmark sn sp (st-decimal-number)
                                     (render-content cs part ri)
-                                    (tag-key tag ri))))]
+                                    (scribble-tag-normalize (tag-key tag ri)))))]
             [(link-element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))]
                           [(cs tag) (values (element-content c) (link-element-tag c))])
@@ -223,7 +223,7 @@
                                                                        (strip-aux (or (vector-ref v 0) "???"))
                                                                        (list "[missing]")))])
                                                      part ri)
-                                     (tag-key tag ri))))]
+                                     (scribble-tag-normalize (tag-key tag ri)))))]
             [(element? c)
              (let-values ([(sn sp) (scribble-style->values (element-style c))])
                (when (render-element? c) ((render-element-render c) this part ri))

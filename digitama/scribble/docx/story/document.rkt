@@ -33,7 +33,7 @@
 (struct word-bookmark Word-Annotation
   ([id : Integer]
    [content : (Listof Word-Run-Content)]
-   [tag : (List Symbol String)])
+   [tag : (Pairof Symbol String)])
   #:type-name Word-Bookmark
   #:transparent)
 
@@ -49,7 +49,7 @@
 
 (struct word-hyperlink Word-Run
   ([content : (Listof Word-Run-Content)]
-   [tag : (List Symbol String)])
+   [tag : (Pairof Symbol String)])
   #:type-name Word-Hyperlink
   #:transparent)
 
@@ -228,7 +228,7 @@
 (define word-annotation->xexpr : (-> Word-Annotation (Listof Xexpr))
   (lambda [a]
     (cond [(word-bookmark? a)
-           (word-cross-structure-annotation (word-bookmark-id a) (word-bookmark-key (cadr (word-bookmark-tag a)))
+           (word-cross-structure-annotation (word-bookmark-id a) (cdr (word-bookmark-tag a))
                                             'w:bookmarkStart 'w:bookmarkEnd
                                             (word-bookmark-content a))]
           [else (list (word-run/unrecognized a))])))
@@ -248,7 +248,7 @@
 (define word-hyperlink->field : (-> Word-Hyperlink (Listof Xexpr))
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
-    (define anchor (word-bookmark-key (cadr tag)))
+    (define anchor (cdr tag))
     
     (word-complex-field (string-append "REF " anchor " \\h")
                         (word-hyperlink-content hl))))
@@ -256,7 +256,7 @@
 (define word-hyperlink->run : (-> Word-Hyperlink Xexpr)
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
-    (define anchor (word-bookmark-key (cadr tag)))
+    (define anchor (cdr tag))
     (define ?tooltip (findf hover-property? (word-style-properties hl)))
     
     (list 'w:hyperlink `([w:anchor . ,anchor]
@@ -328,8 +328,3 @@
 (define word-run/unrecognized : (-> Any Xexpr)
   (lambda [v]
     (word-contents->run (format "~s" v))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define word-bookmark-key : (-> String String)
-  (lambda [name]
-    (string-replace name " " "-")))
