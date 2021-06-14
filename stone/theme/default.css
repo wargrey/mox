@@ -21,7 +21,7 @@
  *       - thm15:themeFamily
  *
  * By convention, from the perspective of the favored CSS engine, the root element of a theme is the name of dialect of Scribble,
- *   that is to say, you could make your theme varying from scribble/base to scribble/manual to others.
+ *   without prefix `scribble/`, that is to say, you could make your theme varying from scribble/base to scribble/manual to others.
  *
  * NOTE that, the reason why we employ CSS as the styling language is that
  *   the syntax of XML is a piece of shit, however the OpenXML employed by MS Office is even more cumbersome,
@@ -130,7 +130,7 @@ fontScheme {
 }
 
 fontScheme#head {
-  latin: "Calibri Light" var(--panose);
+  latin: panose("Calibri Light" var(--panose));
 
   Jpan: "游ゴシック Light";
   Hans: "等线 Light";
@@ -143,7 +143,7 @@ fontScheme#head {
 }
 
 fontScheme#body {
-  latin: "Calibri" var(--panose);
+  latin: panose("Calibri" var(--panose));
 
   Jpan: "游明朝";
   Hans: "等线";

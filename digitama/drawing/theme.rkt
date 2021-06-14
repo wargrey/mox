@@ -27,7 +27,7 @@
 (define-type MOX-Solid-Fill-Datum (U MOX-Color-Datum2 MOX-Color-Transform))
 (define-type MOX-Fill-Datum (U False MOX-Solid-Fill-Datum MOX-Gradient-Fill))
 
-(define-type MOX-Font-Scripts (HashTable Symbol String))
+(define-type MOX-Font-Scripts (HashTable Symbol MOX-Font-Datum))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; These values are borrowed from the theme named "Facet"
@@ -55,7 +55,7 @@
    [inverse? : Boolean           #:= #false])
   #:transparent)
 
-(define-preference mox-color-theme : MOX-Color-Theme
+(define-preference mox-color-scheme : MOX-Color-Scheme
   ; Fundamentals and Markup Language Reference, 20.1.6.2
   ([dark1 : MOX-Color-Datum        #:= #%mox-window-text]
    [light1 : MOX-Color-Datum       #:= #%mox-window]
@@ -73,12 +73,12 @@
    [visited-link : MOX-Color-Datum #:= #xB9D181])
   #:transparent)
 
-(define-preference mox-font-theme : MOX-Font-Theme
+(define-preference mox-font-scheme : MOX-Font-Scheme
   ; Fundamentals and Markup Language Reference, 20.1.4.1.24/25
-  ([latin : String               #:= "Arial Black"]
-   [asian : String               #:= ""]
-   [complex-script : String      #:= ""]
-   [extension : MOX-Font-Scripts #:= #%mox-fonts])
+  ([latin : MOX-Font-Datum          #:= "Arial Black"]
+   [east-asian : MOX-Font-Datum     #:= ""]
+   [complex-script : MOX-Font-Datum #:= ""]
+   [scripts : MOX-Font-Scripts      #:= #%mox-no-scripts])
   #:transparent)
 
 (define-preference mox-gradient-fill : MOX-Gradient-Fill
@@ -98,52 +98,68 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct mox-theme
   ([name : String]
-   [color : MOX-Color-Theme]
-   [major-font : MOX-Font-Theme] ; a.k.a heading font
-   [minor-font : MOX-Font-Theme] ; a.k.a body font
+   [color : MOX-Color-Scheme]
+   [major-font : MOX-Font-Scheme] ; a.k.a heading font
+   [minor-font : MOX-Font-Scheme] ; a.k.a body font
    [fill-style : MOX-Fill-Style]
    [bg-fill-style : MOX-Fill-Style])
   #:type-name MOX-Theme
   #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define ~color : CSS-Subject (make-css-subject #:type 'clrScheme))
+(define ~clrScheme : CSS-Subject (make-css-subject #:type 'clrScheme #::classes '(root)))
+(define ~headFont : CSS-Subject (make-css-subject #:type 'fontScheme #:id '#:head #::classes '(root)))
+(define ~bodyFont : CSS-Subject (make-css-subject #:type 'fontScheme #:id '#:body #::classes '(root)))
 
-(define mox-color-ref : (All (c) (-> CSS-Values (Option CSS-Values) Symbol c (U FlRGBA c)))
-  (lambda [declared-values inherited-values property def-value]
-    (define maybe-color (css-rgba-ref declared-values inherited-values property))
-
-    (cond [(rgba? maybe-color) maybe-color]
-          [else def-value])))
-
-(define mox-clrsheme-parsers : CSS-Declaration-Parsers
+(define mox-clrscheme-parsers : CSS-Declaration-Parsers
   (lambda [suitcased-name deprecated!]
     (<mox-color>)))
 
-(define mox-clrscheme-filter : (CSS-Cascaded-Value-Filter MOX-Color-Theme)
+(define mox-fontscheme-parsers : CSS-Declaration-Parsers
+  (lambda [suitcased-name deprecated!]
+    (<mox-font>)))
+
+(define mox-clrscheme-filter : (CSS-Cascaded-Value-Filter MOX-Color-Scheme)
   (lambda [declared-values inherited-values]
     (current-css-element-color (css-rgba-ref declared-values inherited-values))
     
-    (make-mox-color-theme #:dark1 (mox-color-ref declared-values inherited-values 'dk1 (#%mox-color-theme-dark1))
-                          #:dark2 (mox-color-ref declared-values inherited-values 'dk2 (#%mox-color-theme-dark2))
-                          #:light1 (mox-color-ref declared-values inherited-values 'lt1 (#%mox-color-theme-light1))
-                          #:light2 (mox-color-ref declared-values inherited-values 'lt2 (#%mox-color-theme-light2))
-                          #:hyperlink (mox-color-ref declared-values inherited-values 'hlink (#%mox-color-theme-hyperlink))
-                          #:visited-link (mox-color-ref declared-values inherited-values 'folhlink (#%mox-color-theme-visited-link))
-                          
-                          #:accent1 (mox-color-ref declared-values inherited-values 'accent1 (#%mox-color-theme-accent1))
-                          #:accent2 (mox-color-ref declared-values inherited-values 'accent2 (#%mox-color-theme-accent2))
-                          #:accent3 (mox-color-ref declared-values inherited-values 'accent3 (#%mox-color-theme-accent3))
-                          #:accent4 (mox-color-ref declared-values inherited-values 'accent4 (#%mox-color-theme-accent4))
-                          #:accent5 (mox-color-ref declared-values inherited-values 'accent5 (#%mox-color-theme-accent5))
-                          #:accent6 (mox-color-ref declared-values inherited-values 'accent6 (#%mox-color-theme-accent6)))))
+    (make-mox-color-scheme #:dark1 (css-rgba-ref declared-values inherited-values 'dk1)
+                           #:dark2 (css-rgba-ref declared-values inherited-values 'dk2)
+                           #:light1 (css-rgba-ref declared-values inherited-values 'lt1)
+                           #:light2 (css-rgba-ref declared-values inherited-values 'lt2)
+                           #:hyperlink (css-rgba-ref declared-values inherited-values 'hlink)
+                           #:visited-link (css-rgba-ref declared-values inherited-values 'folhlink)
+                           
+                           #:accent1 (css-rgba-ref declared-values inherited-values 'accent1)
+                           #:accent2 (css-rgba-ref declared-values inherited-values 'accent2)
+                           #:accent3 (css-rgba-ref declared-values inherited-values 'accent3)
+                           #:accent4 (css-rgba-ref declared-values inherited-values 'accent4)
+                           #:accent5 (css-rgba-ref declared-values inherited-values 'accent5)
+                           #:accent6 (css-rgba-ref declared-values inherited-values 'accent6))))
 
-(define read-mox-theme-from-css : (-> CSS-StdIn Any)
-  (lambda [/dev/cssin]
+(define mox-fontscheme-filter : (CSS-Cascaded-Value-Filter MOX-Font-Scheme)
+  (lambda [declared-values inherited-values]
+    (define declared-scripts : (Listof Symbol) (remove* '(latin ea cs) (hash-keys declared-values)))
+    
+    (make-mox-font-scheme #:latin (css-ref declared-values inherited-values 'latin mox-font? (#%mox-font-scheme-latin))
+                          #:east-asian (css-ref declared-values inherited-values 'ea mox-font? (#%mox-font-scheme-east-asian))
+                          #:complex-script (css-ref declared-values inherited-values 'cs mox-font? (#%mox-font-scheme-complex-script))
+                          #:scripts (cond [(null? declared-scripts) #%mox-no-scripts]
+                                          [else (for/hash : (HashTable Symbol MOX-Font-Datum) ([s (in-list declared-scripts)])
+                                                  (values s (css-ref declared-values inherited-values s mox-font? "")))]))))
+
+(define read-mox-theme-from-css : (->* (CSS-StdIn) (Symbol) Any)
+  (lambda [/dev/cssin [root-type 'base]]
+    (css-root-element-type root-type)
+
     (define theme.css : CSS-Stylesheet (read-css-stylesheet /dev/cssin))
-    (define-values (clrScheme _) (css-cascade theme.css ~color mox-clrsheme-parsers mox-clrscheme-filter #false))
+    (define ~root : CSS-Subject (make-css-subject))
+    (define *root : CSS-Values (css-variable-cascade theme.css ~root #false))
+    (define-values (clrScheme _clr) (css-cascade theme.css (list ~clrScheme ~root) mox-clrscheme-parsers mox-clrscheme-filter *root))
+    (define-values (headFont _maf) (css-cascade theme.css (list ~headFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
+    (define-values (bodyFont _mif) (css-cascade theme.css (list ~bodyFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
 
-    clrScheme))
+    (list clrScheme headFont bodyFont)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #%mox-window-text : MOX-Color-Datum (cons "windowText" #x000000))
@@ -160,7 +176,9 @@
 (define #%mox-moderate-gradient-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:stops #%mox-moderate-gradient-stops #:style 5400000))
 (define #%mox-intense-gradient-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:stops #%mox-intense-gradient-stops #:style 5400000))
 
-(define #%mox-fonts : MOX-Font-Scripts
+(define #%mox-no-scripts : MOX-Font-Scripts #hasheq())
+
+(define #%mox-scripts : MOX-Font-Scripts
   (make-hasheq '((Jpan . "MS ゴシック")
                  (Hang . "굴림")
                  (Hans . "微软雅黑")
