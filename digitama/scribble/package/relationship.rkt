@@ -69,11 +69,11 @@
     (define target-entry : String (opc-part-name-normalize/zip (cadr elem)))
     (define external? : Boolean (cadddr elem))
     
-    (define attlist : (Listof (Pairof Symbol String))
+    (define attlist : (Listof (Pairof Symbol String)) ; order seems matter
       `([Id         . ,(symbol->immutable-string (car elem))]
-        [Target     . ,(if (not external?) (opc-relationship-relative-entry-name entry-name target-entry) target-entry)]
-        [Type       . ,(caddr elem)]))
+        [Type       . ,(caddr elem)]
+        [Target     . ,(if (not external?) (opc-relationship-relative-entry-name entry-name target-entry) target-entry)]))
     
     (list 'Relationship (cond [(not external?) attlist]
-                              [else (cons (cons 'TargetMode "External")
-                                          attlist)]))))
+                              [else (append attlist
+                                            (list (cons 'TargetMode "External")))]))))

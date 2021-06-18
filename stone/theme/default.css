@@ -68,11 +68,19 @@ clrScheme {
 }
 
 /**
- * fillStyleLst
+ * fillStyleLst and bgFillStyleLst
+ *
+ * These schemes are associated with the element `fillStyle`
+ * Both of them are lists containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected as IDs
+ * Besides, `bgFillStyleLst` is defined as a `fillStyle` element classified as `background`, while
+ *   `fillStyleLst` itself is classified as `shape`. As such, a `fillStyle` selector without ID
+ *   and/or class parts can be used to share common properties.
+ *
+ * Properties of `fillStyle` work similar to the `union` of the C language.
  */
 
-fillStyle#subtle {
-  color: phClr;
+fillStyle#subtle { /* for both .shape and .background */
+  solid: phClr;
 }
 
 /**

@@ -4,6 +4,8 @@
 
 (require css)
 
+(require racket/symbol)
+
 (require "../css/datatype.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,8 +147,9 @@
                           #:east-asian (css-ref declared-values inherited-values 'ea mox-font? (#%mox-font-scheme-east-asian))
                           #:complex-script (css-ref declared-values inherited-values 'cs mox-font? (#%mox-font-scheme-complex-script))
                           #:scripts (cond [(null? declared-scripts) #%mox-no-scripts]
-                                          [else (for/hash : (HashTable Symbol MOX-Font-Datum) ([s (in-list declared-scripts)])
-                                                  (values s (css-ref declared-values inherited-values s mox-font? "")))]))))
+                                          [else (for/hasheq : (HashTable Symbol MOX-Font-Datum) ([s (in-list declared-scripts)])
+                                                  (values (string->symbol (string-titlecase (symbol->immutable-string s)))
+                                                          (css-ref declared-values inherited-values s mox-font? "")))]))))
 
 (define read-mox-theme-from-css : (->* (CSS-StdIn) (Symbol) Any)
   (lambda [/dev/cssin [root-type 'base]]
