@@ -26,6 +26,17 @@
  * NOTE that, the reason why we employ CSS as the styling language is that
  *   the syntax of XML is a piece of shit, however the OpenXML employed by MS Office is even more cumbersome,
  *   as such, the logic structure of the favored CSS engine is just as distinct as it should be.
+
+ * A color can be one of CSS colors, OpenXML colors, and OpenXML color transforms.
+ *   * If a color can be represented by both CSS color and OpenXML color, please use CSS color representation;
+ *   * The OpenXML scheme colors are representated as CSS keywords; 
+ *   * Other supported OpenXML colors are represented as functions, whose names are exactly what they've been defined in OpenXML References,
+ *   *   like `sysClr`;
+ *   * The OpenXMl color tranformations are represented as the function `clrTransform(color, tranforms ...)`, where
+ *       `transforms` are also representated as functions: alpha, red, green, blue, hue, sat, lum.  
+ *
+ *   The OpenXML keyword `phClr` is equivalent to the CSS keyword `currentcolor`
+ *   The OpenXML keywords are case sensitive, and so are their corresponding CSS keywords
  */
 
 /* The namespace is optional and will never be mapped to the `xmlns` attribute of `a:theme` */
@@ -39,20 +50,12 @@
  * clrScheme
  *
  * This scheme is just straightforward
- * There should be at most 12 colors as its properties
- *
- * In contrast to OpenXML colors, CSS colors contains `alpha` component directly,
- *   nonetheless, there are still some selectors, like `clrTransform#accent1`,
- *   whose properties define a list of color transformations for `accent1`,
- *   among which, the `alpha`, `alphaMod` and `alphaOff` transformations
- *   always take higher priority over the CSS `alpha`. Specifically, for
- *   OpenXML colors typed as `ST_HexColorRGB`, like of the 2nd argument of `sysClr`,
- *   the CSS `alpha`s are always ignored.
+ * There should be at least 12 properties defined as colors
  */
 
 clrScheme {
-  dk1:      sysClr("windowText", #000000);
-  lt1:      sysClr("window"      #FFFFFF);
+  dk1:      sysClr(windowText, #000000);
+  lt1:      sysClr(window      #FFFFFF);
   dk2:      #44546A;
   lt2:      #E7E6E6;
 
@@ -71,15 +74,16 @@ clrScheme {
  * fillStyleLst and bgFillStyleLst
  *
  * These schemes are associated with the element `fillStyle`
- * Both of them are lists containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected as IDs
+ * Both of them are lists and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected as IDs
  * Besides, `bgFillStyleLst` is defined as a `fillStyle` element classified as `background`, while
  *   `fillStyleLst` itself is classified as `shape`. As such, a `fillStyle` selector without ID
  *   and/or class parts can be used to share common properties.
  *
- * Properties of `fillStyle` work similar to the `union` of the C language.
+ * Properties of `fillStyle` work in a way similar to the `union` of the C language.
  */
 
 fillStyle#subtle { /* for both .shape and .background */
+  type: solid;
   solid: phClr;
 }
 

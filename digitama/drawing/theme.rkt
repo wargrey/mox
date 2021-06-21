@@ -11,22 +11,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-Percentage (U Nonnegative-Fixnum Nonnegative-Flonum))
 
-(define-type MOX-Scheme-Color-Datum (U 'accent1 'accent2 'accent3 'accent4 'accent5 'accent6
-                                       'bg1 'bg2 'dk1 'dk2 'lt1 'lt2 'tx1 'tx2 'hlink 'folHlink
-                                       'phClr #| use the style color |#))
-
 ;; NOTE
 ; Other color representations, such as hslClr, prstClr, and scrgbClr,
 ; should be transformed into instances of srgbClr before using
-
-(define-type MOX-Color-Datum (U Index FlRGBA MOX-System-Color-Datum))
-(define-type MOX-Color-Datum2 (U MOX-Color-Datum MOX-Scheme-Color-Datum))
 
 (define-type MOX-Gradient-Fill-Flip (U 'none 'x 'xy 'y))
 (define-type MOX-Gradient-Fill-Angle (U MOX-Percentage (Boxof MOX-Percentage #| with #true as the `scaled` |#)))
 (define-type MOX-Gradient-Fill-Path (U 'circle 'rect 'shape))
 
-(define-type MOX-Solid-Fill-Datum (U MOX-Color-Datum2 MOX-Color-Transform))
+(define-type MOX-Solid-Fill-Datum (U MOX-Color-Datum MOX-Color-Transform))
 (define-type MOX-Fill-Datum (U False MOX-Solid-Fill-Datum MOX-Gradient-Fill))
 
 (define-type MOX-Font-Scripts (HashTable Symbol MOX-Font-Datum))
@@ -41,7 +34,7 @@
   #:transparent)
 
 (define-preference mox-color-transform : MOX-Color-Transform
-  ([color : MOX-Color-Datum2     #:= 'phClr]
+  ([color : MOX-Color-Datum     #:= 'phClr]
    [alpha : MOX-Color-Alter      #:= #%mox-intact-color]
    [red : MOX-Color-Alter        #:= #%mox-intact-color]
    [green : MOX-Color-Alter      #:= #%mox-intact-color]
@@ -162,7 +155,7 @@
     (define-values (headFont _maf) (css-cascade theme.css (list ~headFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
     (define-values (bodyFont _mif) (css-cascade theme.css (list ~bodyFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
 
-    (list clrScheme headFont bodyFont)))
+    clrScheme))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #%mox-window-text : MOX-Color-Datum (cons "windowText" #x000000))
