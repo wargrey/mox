@@ -14,7 +14,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-System-Color-Datum (U String (Pairof String Index)))
 (define-type MOX-Font-Datum (U String (Pairof String Keyword)))
-(define-type MOX-Color-Component-Transformation-Value (U Nonnegative-Flonum CSS-%))
 
 (define-type MOX-Simple-Color (U Index FlColor MOX-System-Color-Datum))
 (define-type MOX-Color-Datum (U MOX-Simple-Color MOX-Scheme-Color))
@@ -30,8 +29,10 @@
    accent1 accent2 accent3 accent4 accent5 accent6
    bg1 bg2 dk1 dk2 lt1 lt2 tx1 tx2 hlink folHlink])
 
-(define-css-value mox-color-component-transform #:as MOX-Color-Component-Transform ([type : Symbol] [value : MOX-Color-Component-Transformation-Value]))
-(define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Color-Datum] [alterations : (Listof MOX-Color-Component-Transform)]))
+(define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
+
+(define-css-value mox-color-component-transform #:as MOX-Color-Component-Transform ([type : Symbol] [value : CSS-%]))
+(define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Transform Symbol))]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define <mox-system-color-keyword> : (CSS:Filter String)
@@ -55,10 +56,15 @@
              (string? (car v))
              (index? (cdr v))))))
 
-(define mox-color-transformations? : (-> Any Boolean : (Listof MOX-Color-Component-Transform))
+(define mox-color-transformation+element? : (-> Any Boolean : (U MOX-Color-Component-Transform Symbol))
+  (lambda [t]
+    (or (mox-color-component-transform? t)
+        (symbol? t))))
+
+(define mox-color-transformations? : (-> Any Boolean : (Listof (U MOX-Color-Component-Transform Symbol)))
   (lambda [ts]
     (and (list? ts)
-         (andmap mox-color-component-transform? ts))))
+         (andmap mox-color-transformation+element? ts))))
 
 (define mox-font-datum? : (-> Any Boolean : MOX-Font-Datum)
   (lambda [v]
@@ -70,20 +76,24 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-css-function-filter <mox-color-component-transform> #:-> MOX-Color-Component-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3
-  [(alpha)          #:=> [(mox-color-component-transform 'alpha      [value ? css-%? nonnegative-flonum?])]
+  [(alpha)          #:=> [(mox-color-component-transform 'alpha      [value ? css-%?])]
    <:nonneg-percent+mod+off:>]
-  [(red)            #:=> [(mox-color-component-transform 'red        [value ? css-%? nonnegative-flonum?])]
+  [(red)            #:=> [(mox-color-component-transform 'red        [value ? css-%?])]
    <:percent+mod+off:>]
-  [(green)          #:=> [(mox-color-component-transform 'green      [value ? css-%? nonnegative-flonum?])]
+  [(green)          #:=> [(mox-color-component-transform 'green      [value ? css-%?])]
    <:percent+mod+off:>]
-  [(blue)           #:=> [(mox-color-component-transform 'blue       [value ? css-%? nonnegative-flonum?])]
+  [(blue)           #:=> [(mox-color-component-transform 'blue       [value ? css-%?])]
    <:percent+mod+off:>]
-  [(hue)            #:=> [(mox-color-component-transform 'hue        [value ? css-%? nonnegative-flonum?])]
+  [(hue)            #:=> [(mox-color-component-transform 'hue        [value ? css-%?])]
    <:angle+mod+off:>]
-  [(sat saturation) #:=> [(mox-color-component-transform 'saturation [value ? css-%? nonnegative-flonum?])]
+  [(sat saturation) #:=> [(mox-color-component-transform 'saturation [value ? css-%?])]
    <:percent+mod+off:>]
-  [(lum luminance)  #:=> [(mox-color-component-transform 'luminance  [value ? css-%? nonnegative-flonum?])]
+  [(lum luminance)  #:=> [(mox-color-component-transform 'luminance  [value ? css-%?])]
    <:percent+mod+off:>]
+  [(tint)           #:=> [(mox-color-component-transform 'tint       [value ? css-%?])]
+   <:fixed-percentage:>]
+  [(shade)          #:=> [(mox-color-component-transform 'shade      [value ? css-%?])]
+   <:fixed-percentage:>]
   #:where
   [(define-css-function-filter <mox-color-component-modulation> #:-> CSS+%
      [(mod Mod modulation Modulation)#:=> [(values [value ? css+%?])] #:<+> (CSS:<^> (<mox+percentage>))])
@@ -96,28 +106,31 @@
 
    (define <:percent+mod+off:> (CSS:<^> (CSS:<+> (<mox-percentage>) (<mox-color-component-modulation>) (<mox-color-component-offset-percentage>))))
    (define <:nonneg-percent+mod+off:> (CSS:<^> (CSS:<+> (<mox+percentage>) (<mox-color-component-modulation>) (<mox-color-component-offset-percentage>))))
-   (define <:angle+mod+off:> (CSS:<^> (CSS:<+> (<mox+angle>) (<mox-color-component-modulation>) (<mox-color-component-offset-angle>))))])
+   (define <:angle+mod+off:> (CSS:<^> (CSS:<+> (<mox+angle>) (<mox-color-component-modulation>) (<mox-color-component-offset-angle>))))
+   (define <:fixed-percentage:> (CSS:<^> (<mox+percentage>)))])
 
 (define-css-function-filter <mox-system-color> #:-> MOX-System-Color-Datum
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
   ;;    eg: sysClr(val, lastClr) or sysClr(val lastClr)
   [(sysclr sysClr systemclr systemClr) #:=> [(cons [val ? string?] [lastClr ? index?])]
    (CSS<&> ((inst CSS:<^> Any) <mox-system-color-keyword>)
-           (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha) hexa-digits)))])
+           (css-omissible-comma-parser (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha)
+                                                         hexa-digits))))])
 
 (define-css-function-filter <mox-color-transformation> #:-> MOX-Color-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
-  ;;    eg: sysClr(val, lastClr)
+  ;;    eg: clrTransform(color, tranformation-list)
   [(clrtransform clrTransform) #:=> [(mox-color-transform [color ? mox-color-datum?] [transforms ? mox-color-transformations?])]
-   (CSS<&> (CSS:<^> (<mox-color>))
-           (CSS<!> (CSS:<^> (<mox-color-component-transform>))))])
+   (CSS<&> (css-comma-followed-parser (CSS:<^> (<mox-color>)))
+           (CSS<!> (CSS:<#> (CSS:<+> (<mox-color-component-transform>)
+                                     (<css-keyword> mox-color-transformation-elements)))))])
 
 (define-css-function-filter <mox-panose-font> #:-> MOX-Font-Datum
   ;;; Fundamentals and Markup Language References, 21.1.2.5
   ;;    eg: panose(typeface, value)
   [(panose) #:=> [(cons [typeface ? string?] [number ? keyword?])]
    (CSS<&> ((inst CSS:<^> Any) (<css:string>))
-           (CSS:<^> <mox-panose>))])
+           (css-omissible-comma-parser (CSS:<^> <mox-panose>)))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-css-disjoint-filter <mox-color> #:-> (U MOX-System-Color-Datum CSS-Color-Datum)
