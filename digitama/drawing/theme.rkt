@@ -136,13 +136,13 @@
   (lambda [declared-values inherited-values]
     (define declared-scripts : (Listof Symbol) (remove* '(latin ea cs) (hash-keys declared-values)))
     
-    (make-mox-font-scheme #:latin (css-ref declared-values inherited-values 'latin mox-font? (#%mox-font-scheme-latin))
-                          #:east-asian (css-ref declared-values inherited-values 'ea mox-font? (#%mox-font-scheme-east-asian))
-                          #:complex-script (css-ref declared-values inherited-values 'cs mox-font? (#%mox-font-scheme-complex-script))
+    (make-mox-font-scheme #:latin (css-ref declared-values inherited-values 'latin mox-font-datum? (#%mox-font-scheme-latin))
+                          #:east-asian (css-ref declared-values inherited-values 'ea mox-font-datum? (#%mox-font-scheme-east-asian))
+                          #:complex-script (css-ref declared-values inherited-values 'cs mox-font-datum? (#%mox-font-scheme-complex-script))
                           #:scripts (cond [(null? declared-scripts) #%mox-no-scripts]
                                           [else (for/hasheq : (HashTable Symbol MOX-Font-Datum) ([s (in-list declared-scripts)])
                                                   (values (string->symbol (string-titlecase (symbol->immutable-string s)))
-                                                          (css-ref declared-values inherited-values s mox-font? "")))]))))
+                                                          (css-ref declared-values inherited-values s mox-font-datum? "")))]))))
 
 (define read-mox-theme-from-css : (->* (CSS-StdIn) (Symbol) Any)
   (lambda [/dev/cssin [root-type 'base]]

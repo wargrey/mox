@@ -3,6 +3,9 @@
 (provide (all-defined-out))
 
 (require css)
+(require css/digitama/color)
+(require css/digitama/image)
+
 (require digimon/enumeration)
 
 (require racket/keyword)
@@ -57,7 +60,7 @@
     (and (list? ts)
          (andmap mox-color-component-transform? ts))))
 
-(define mox-font? : (-> Any Boolean : MOX-Font-Datum)
+(define mox-font-datum? : (-> Any Boolean : MOX-Font-Datum)
   (lambda [v]
     (or (string? v)
         (and (pair? v)
@@ -100,31 +103,30 @@
   ;;    eg: sysClr(val, lastClr) or sysClr(val lastClr)
   [(sysclr sysClr systemclr systemClr) #:=> [(cons [val ? string?] [lastClr ? index?])]
    (CSS<&> ((inst CSS:<^> Any) <mox-system-color-keyword>)
-           (css-omissible-comma-parser (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha)
-                                                         hexa-digits))))])
+           (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha) hexa-digits)))])
 
 (define-css-function-filter <mox-color-transformation> #:-> MOX-Color-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
   ;;    eg: sysClr(val, lastClr)
   [(clrtransform clrTransform) #:=> [(mox-color-transform [color ? mox-color-datum?] [transforms ? mox-color-transformations?])]
    (CSS<&> (CSS:<^> (<mox-color>))
-           (CSS<!> (css-omissible-comma-parser (CSS:<^> (<mox-color-component-transform>)))))])
+           (CSS<!> (CSS:<^> (<mox-color-component-transform>))))])
 
 (define-css-function-filter <mox-panose-font> #:-> MOX-Font-Datum
   ;;; Fundamentals and Markup Language References, 21.1.2.5
   ;;    eg: panose(typeface, value)
   [(panose) #:=> [(cons [typeface ? string?] [number ? keyword?])]
    (CSS<&> ((inst CSS:<^> Any) (<css:string>))
-           (css-omissible-comma-parser (CSS:<^> <mox-panose>)))])
+           (CSS:<^> <mox-panose>))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-css-disjoint-filter <mox-color> #:-> (U MOX-System-Color-Datum Symbol FlColor CSS-Wide-Keyword)
+(define-css-disjoint-filter <mox-color> #:-> (U MOX-System-Color-Datum CSS-Color-Datum)
   (<css-color>)
   <mox-system-color-keyword>
   (<css-keyword/cs> mox-scheme-colors)
   (<mox-system-color>))
 
-(define-css-disjoint-filter <mox-color+transform> #:-> (U MOX-System-Color-Datum Symbol FlColor MOX-Color-Transform CSS-Wide-Keyword)
+(define-css-disjoint-filter <mox-color+transform> #:-> (U MOX-System-Color-Datum CSS-Color-Datum MOX-Color-Transform)
   (<mox-color>)
   (<mox-color-transformation>))
 

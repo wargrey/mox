@@ -54,8 +54,8 @@
  */
 
 clrScheme {
-  dk1:      sysClr(windowText, #000000);
-  lt1:      sysClr(window      #FFFFFF);
+  dk1:      sysClr(windowText #000000);
+  lt1:      sysClr(window     #FFFFFF);
   dk2:      #44546A;
   lt2:      #E7E6E6;
 
