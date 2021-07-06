@@ -67,19 +67,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-css-function-filter <mox-color-component-transform> #:-> MOX-Color-Component-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3
-  [(alpha) #:=> [(mox-color-component-transform 'alpha [value ? css-%? nonnegative-flonum?])]
+  [(alpha)          #:=> [(mox-color-component-transform 'alpha      [value ? css-%? nonnegative-flonum?])]
    <:nonneg-percent+mod+off:>]
-  [(red) #:=> [(mox-color-component-transform 'red [value ? css-%? nonnegative-flonum?])]
+  [(red)            #:=> [(mox-color-component-transform 'red        [value ? css-%? nonnegative-flonum?])]
    <:percent+mod+off:>]
-  [(green) #:=> [(mox-color-component-transform 'green [value ? css-%? nonnegative-flonum?])]
+  [(green)          #:=> [(mox-color-component-transform 'green      [value ? css-%? nonnegative-flonum?])]
    <:percent+mod+off:>]
-  [(blue) #:=> [(mox-color-component-transform 'blue [value ? css-%? nonnegative-flonum?])]
+  [(blue)           #:=> [(mox-color-component-transform 'blue       [value ? css-%? nonnegative-flonum?])]
    <:percent+mod+off:>]
-  [(hue) #:=> [(mox-color-component-transform 'hue [value ? css-%? nonnegative-flonum?])]
+  [(hue)            #:=> [(mox-color-component-transform 'hue        [value ? css-%? nonnegative-flonum?])]
    <:angle+mod+off:>]
   [(sat saturation) #:=> [(mox-color-component-transform 'saturation [value ? css-%? nonnegative-flonum?])]
    <:percent+mod+off:>]
-  [(lum luminance) #:=> [(mox-color-component-transform 'luminance [value ? css-%? nonnegative-flonum?])]
+  [(lum luminance)  #:=> [(mox-color-component-transform 'luminance  [value ? css-%? nonnegative-flonum?])]
    <:percent+mod+off:>]
   #:where
   [(define-css-function-filter <mox-color-component-modulation> #:-> CSS+%
@@ -99,23 +99,23 @@
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
   ;;    eg: sysClr(val, lastClr) or sysClr(val lastClr)
   [(sysclr sysClr systemclr systemClr) #:=> [(cons [val ? string?] [lastClr ? index?])]
-   (CSS<&> (CSS:<^> <mox-system-color-keyword>)
-           (css-comma-parser (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha)
-                                               hexa-digits))))])
+   (CSS<&> ((inst CSS:<^> Any) <mox-system-color-keyword>)
+           (css-omissible-comma-parser (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha)
+                                                         hexa-digits))))])
 
 (define-css-function-filter <mox-color-transformation> #:-> MOX-Color-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
   ;;    eg: sysClr(val, lastClr)
   [(clrtransform clrTransform) #:=> [(mox-color-transform [color ? mox-color-datum?] [transforms ? mox-color-transformations?])]
    (CSS<&> (CSS:<^> (<mox-color>))
-           (CSS<!> (css-comma-parser (CSS:<^> (<mox-color-component-transform>)))))])
+           (CSS<!> (css-omissible-comma-parser (CSS:<^> (<mox-color-component-transform>)))))])
 
 (define-css-function-filter <mox-panose-font> #:-> MOX-Font-Datum
   ;;; Fundamentals and Markup Language References, 21.1.2.5
   ;;    eg: panose(typeface, value)
   [(panose) #:=> [(cons [typeface ? string?] [number ? keyword?])]
-   (CSS<&> (CSS:<^> (<css:string>))
-           (css-comma-parser (CSS:<^> <mox-panose>)))])
+   (CSS<&> ((inst CSS:<^> Any) (<css:string>))
+           (css-omissible-comma-parser (CSS:<^> <mox-panose>)))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-css-disjoint-filter <mox-color> #:-> (U MOX-System-Color-Datum Symbol FlColor CSS-Wide-Keyword)
@@ -158,12 +158,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-fixed-percentage : (-> Integer CSS-%)
   (lambda [v]
-    (css-% (* (exact->inexact v) 0.00001))))
+    (make-css-% (* (exact->inexact v) 0.00001))))
 
 (define mox+fixed-percentage : (-> Natural CSS+%)
   (lambda [v]
-    (let ([% (* (real->double-flonum v) 0.00001)])
-      (css+% % %))))
+    (make-css+% (* (real->double-flonum v) 0.00001))))
 
 (define mox-angle : (case-> [Natural -> Nonnegative-Flonum]
                             [Integer -> Flonum])
