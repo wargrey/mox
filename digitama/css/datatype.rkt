@@ -5,8 +5,10 @@
 (require css)
 (require css/digitama/color)
 (require css/digitama/image)
+(require css/digitama/syntax/misc)
 
 (require digimon/enumeration)
+(require digimon/predicate)
 
 (require racket/keyword)
 (require racket/symbol)
@@ -17,6 +19,10 @@
 
 (define-type MOX-Simple-Color (U Index FlColor MOX-System-Color-Datum))
 (define-type MOX-Color-Datum (U MOX-Simple-Color MOX-Scheme-Color))
+
+(define-type MOX-Fill-Style (U MOX-Color-Datum MOX-Color-Transform))
+(define-type MOX-Linear-Color-Stop (Pairof MOX-Fill-Style (Listof CSS-%)))
+(define-type MOX-Linear-Color-Stops (Pairof MOX-Linear-Color-Stop (Listof+ MOX-Linear-Color-Stop)))
 
 (define-enumeration mox-system-color : MOX-System-Color
   [background scrollBar activeCaption inactiveCaption menu window windowFrame menuText windowText
@@ -34,17 +40,19 @@
 (define-css-value mox-color-component-transform #:as MOX-Color-Component-Transform ([type : Symbol] [value : CSS-%]))
 (define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Transform Symbol))]))
 
+(define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> css-gradient ([angle : Flonum] [stops : MOX-Linear-Color-Stops]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define <mox-system-color-keyword> : (CSS:Filter String)
   (CSS:<~> (<css-keyword/cs> mox-system-colors) symbol->immutable-string))
 
-(define mox-simple-color? : (-> Any Boolean : #:+ MOX-Simple-Color)
+(define mox-simple-color? : (-> Any Boolean : MOX-Simple-Color)
   (lambda [c]
     (or (flcolor? c)
         (index? c)
         (mox-sysclr? c))))
 
-(define mox-color-datum? : (-> Any Boolean : #:+ MOX-Color-Datum)
+(define mox-color-datum? : (-> Any Boolean : MOX-Color-Datum)
   (lambda [c]
     (or (mox-simple-color? c)
         (mox-scheme-color? c))))
@@ -65,6 +73,24 @@
   (lambda [ts]
     (and (list? ts)
          (andmap mox-color-transformation+element? ts))))
+
+(define mox-fill-style? : (-> Any Boolean : MOX-Fill-Style)
+  (lambda [t]
+    (or (mox-color-datum? t)
+        (mox-color-transform? t))))
+
+(define mox-linear-color-stop? : (-> Any Boolean : MOX-Linear-Color-Stop)
+  (lambda [v]
+    (and (pair? v)
+         (mox-fill-style? (car v))
+         ((inst is-listof? CSS-%) (cdr v) css-%?))))
+
+(define mox-linear-color-stop-list? : (-> Any Boolean : MOX-Linear-Color-Stops)
+  (lambda [datum]
+    (and (list? datum)
+         (pair? datum)
+         (mox-linear-color-stop? (car datum))
+         ((inst is-listof+? MOX-Linear-Color-Stop) (cdr datum) mox-linear-color-stop?))))
 
 (define mox-font-datum? : (-> Any Boolean : MOX-Font-Datum)
   (lambda [v]
@@ -125,6 +151,15 @@
            (CSS<!> (CSS:<#> (CSS:<+> (<mox-color-component-transform>)
                                      (<css-keyword> mox-color-transformation-elements)))))])
 
+(define-css-function-filter <mox-fill-gradient> #:-> CSS-Gradient
+  ;;; Fundamentals and Markup Language References, 20.1.4.1.13
+  [(linear-gradient-fill linGradFill lingradfill lin)
+   #:=> [(mox-linear-gradient [angle ? flonum?] [stops ? mox-linear-color-stop-list?])
+         (mox-linear-gradient (css-named-direction->degree 'bottom) [stops ? mox-linear-color-stop-list?])]
+   (CSS<&> (css-comma-followed-parser (CSS:<^> (<mox+angle>))) (<:mox-length-color-stop:>))]
+  #:where
+  [(define (<:mox-length-color-stop:>) (<:css-color-stop-list:> (CSS:<^> (<mox-color+transform>)) (<mox+percentage>)))])
+
 (define-css-function-filter <mox-panose-font> #:-> MOX-Font-Datum
   ;;; Fundamentals and Markup Language References, 21.1.2.5
   ;;    eg: panose(typeface, value)
@@ -142,6 +177,11 @@
 (define-css-disjoint-filter <mox-color+transform> #:-> (U MOX-System-Color-Datum CSS-Color-Datum MOX-Color-Transform)
   (<mox-color>)
   (<mox-color-transformation>))
+
+(define-css-disjoint-filter <mox-fill-style> #:-> (U MOX-System-Color-Datum CSS-Color-Datum MOX-Color-Transform CSS-Gradient)
+  (<mox-color+transform>)
+  (<css-gradient-notation>)
+  (<mox-fill-gradient>))
 
 (define-css-disjoint-filter <mox-font> #:-> (U MOX-Font-Datum CSS-Wide-Keyword)
   (<css:string>)

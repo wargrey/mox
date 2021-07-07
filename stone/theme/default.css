@@ -79,7 +79,10 @@ clrScheme {
  *   `fillStyleLst` itself is classified as `shape`. As such, a `fillStyle` selector without ID
  *   and/or class parts can be used to share common properties.
  *
- * Properties of `fillStyle` work in a way similar to the `union` of the C language.
+ * Properties of `fillStyle` work in a way similar to the `union` of the C language, where `type` refers to
+ *   another property with the same name as its value, except
+ *   * `group`, corresponding to `grpFill`, and
+ *   * `none`, corresponding to `noFill`.
  */
 
 fillStyle#subtle { /* for both .shape and .background */
