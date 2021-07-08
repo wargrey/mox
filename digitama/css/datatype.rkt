@@ -165,7 +165,7 @@
   [(define (<:mox-length-color-stop:>) (<:css-color-stop-list:> (CSS:<^> (<mox-color+transform>)) (<mox+percentage>)))
    (define (<:path-region:>)
      (CSS<&> (CSS:<^> (<css-keyword> mox-path-gradient-shapes))
-             (CSS<?> [(<css-keyword> 'in) (<:css-region:> (CSS:<~> (<mox-percentage>) css-%-value))]
+             (CSS<?> [(<css-keyword:in>) (<:css-region:> (CSS:<~> (<mox-percentage>) css-%-value))]
                      [else values])))])
 
 (define-css-function-filter <mox-panose-font> #:-> MOX-Font-Datum

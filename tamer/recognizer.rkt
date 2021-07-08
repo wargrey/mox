@@ -21,7 +21,9 @@
                      (context "gradient" #:do
                               (it-check "lin(5400000, clrTransform(phClr, tint(65000), lum(#mod 110000)), clrTransform(phClr, tint(90000)) 88000)"
                                         (<mox-fill-gradient>) css-gradient?)
-                              (it-check "path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000), lum(#mod 110000)), clrTransform(phClr, shade(94000), lum(#mod 96000)) 100000)"
+                              (it-check "path(circle, clrTransform(phClr, tint(90000), lum(#mod 110000)), clrTransform(phClr, shade(94000), lum(#mod 96000)) 100000)"
+                                        (<mox-fill-gradient>) css-gradient?)
+                              (it-check "path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000)), clrTransform(phClr, shade(94000)) 100000)"
                                         (<mox-fill-gradient>) css-gradient?))
                      
                      (context "font" #:do
