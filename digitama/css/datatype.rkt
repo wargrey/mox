@@ -35,17 +35,17 @@
    accent1 accent2 accent3 accent4 accent5 accent6
    bg1 bg2 dk1 dk2 lt1 lt2 tx1 tx2 hlink folHlink])
 
+(define-enumeration mox-path-gradient-shape : MOX-Path-Gradient-Shape [circle rect shape])
+
 (define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
 
 (define-css-value mox-color-component-transform #:as MOX-Color-Component-Transform ([type : Symbol] [value : CSS-Flonum-%]))
 (define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Transform Symbol))]))
 
 (define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> css-gradient ([angle : Flonum] [stops : MOX-Linear-Color-Stops]))
+(define-css-value mox-path-gradient #:as MOX-Path-Gradient #:=> css-gradient ([path : Symbol] [region : (Option CSS-Region)] [stops : MOX-Linear-Color-Stops]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define <mox-system-color-keyword> : (CSS:Filter String)
-  (CSS:<~> (<css-keyword/cs> mox-system-colors) symbol->immutable-string))
-
 (define mox-simple-color? : (-> Any Boolean : MOX-Simple-Color)
   (lambda [c]
     (or (flcolor? c)
@@ -100,6 +100,9 @@
              (keyword? (cdr v))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define <mox-system-color-keyword> : (CSS:Filter String)
+  (CSS:<~> (<css-keyword/cs> mox-system-colors) symbol->immutable-string))
+
 (define-css-function-filter <mox-color-component-transform> #:-> MOX-Color-Component-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3
   [(alpha)          #:=> [(mox-color-component-transform 'alpha      [value ? css-%? flonum?])]
@@ -148,12 +151,22 @@
 
 (define-css-function-filter <mox-fill-gradient> #:-> CSS-Gradient
   ;;; Fundamentals and Markup Language References, 20.1.4.1.13
-  [(linear-gradient-fill linGradFill lingradfill lin)
+  [(linear-gradient-fill lin)
    #:=> [(mox-linear-gradient [angle ? flonum?] [stops ? mox-linear-color-stop-list?])
          (mox-linear-gradient (css-named-direction->degree 'bottom) [stops ? mox-linear-color-stop-list?])]
    (CSS<&> (css-comma-followed-parser (CSS:<^> (<mox+angle>))) (<:mox-length-color-stop:>))]
+  [(path-gradient-fill path)
+   #:=> [(mox-path-gradient [path ? symbol?] [region ? css-region?] [stops ? mox-linear-color-stop-list?])
+         (mox-path-gradient 'default [region ? css-region?] [stops ? mox-linear-color-stop-list?])
+         (mox-path-gradient [path ? symbol?] css-no-region [stops ? mox-linear-color-stop-list?])
+         (mox-path-gradient 'default css-no-region [stops ? mox-linear-color-stop-list?])]
+   (CSS<&> (css-comma-followed-parser (<:path-region:>)) (<:mox-length-color-stop:>))]
   #:where
-  [(define (<:mox-length-color-stop:>) (<:css-color-stop-list:> (CSS:<^> (<mox-color+transform>)) (<mox+percentage>)))])
+  [(define (<:mox-length-color-stop:>) (<:css-color-stop-list:> (CSS:<^> (<mox-color+transform>)) (<mox+percentage>)))
+   (define (<:path-region:>)
+     (CSS<&> (CSS:<^> (<css-keyword> mox-path-gradient-shapes))
+             (CSS<?> [(<css-keyword> 'in) (<:css-region:> (CSS:<~> (<mox-percentage>) css-%-value))]
+                     [else values])))])
 
 (define-css-function-filter <mox-panose-font> #:-> MOX-Font-Datum
   ;;; Fundamentals and Markup Language References, 21.1.2.5

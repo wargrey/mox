@@ -28,7 +28,7 @@
  *   as such, the logic structure of the favored CSS engine is just as distinct as it should be.
 
  * A color can be one of CSS colors, OpenXML colors, and OpenXML color transforms.
- *   * If a color can be represented by both CSS color and OpenXML color, please use CSS color representation;
+ *   * CSS colors are preferable;
  *   * The OpenXML scheme colors are representated as CSS keywords; 
  *   * Other supported OpenXML colors are represented as functions, whose names are exactly what they've been defined in OpenXML References,
  *   *   like `sysClr`;
@@ -37,6 +37,13 @@
  *
  *   The OpenXML keyword `phClr` is equivalent to the CSS keyword `currentcolor`
  *   The OpenXML keywords are case sensitive, and so are their corresponding CSS keywords
+ *
+ * A fill can be one of CSS images, OpenXML fills.
+ *   * CSS images are preferable;
+ *   * The `grpFill` and `noFill` are represented by CSS keywords `group` and `none`, respectively;
+ *   * The `solidFill` is just any value of colors;
+ *   * The `gradFill` is represented by some flattened functions similar to CSS gradient notations;
+ *   * Any unimplemented fills are reinterpreted as `noFill`
  */
 
 /* The namespace is optional and will never be mapped to the `xmlns` attribute of `a:theme` */
@@ -74,20 +81,25 @@ clrScheme {
  * fillStyleLst and bgFillStyleLst
  *
  * These schemes are associated with the element `fillStyle`
- * Both of them are lists and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected as IDs
- * Besides, `bgFillStyleLst` is defined as a `fillStyle` element classified as `background`, while
- *   `fillStyleLst` itself is classified as `shape`. As such, a `fillStyle` selector without ID
- *   and/or class parts can be used to share common properties.
- *
- * Properties of `fillStyle` work in a way similar to the `union` of the C language, where `type` refers to
- *   another property with the same name as its value, except
- *   * `group`, corresponding to `grpFill`, and
- *   * `none`, corresponding to `noFill`.
+ * Both of them are lists and containing 3 styles, `subtle`, `moderate`, and `intense`,
+ *   which are defined by properties with same names respectively.
+ * Besides, `bgFillStyleLst` is defined as a `fillStyle` element identified by `background`, while
+ *   `fillStyleLst` itself is identified by `shape`.
+ * As such, a `fillStyle` selector without ID can be used to share common properties.
  */
 
-fillStyle#subtle { /* for both .shape and .background */
-  type: solid;
-  solid: phClr;
+fillStyle { /* for both #shape and #background */
+  subtle: phClr; /* solid */
+}
+
+fillStyle#shape {
+  moderate: lin(5400000, clrTransform(phClr, tint(65000), lum(#mod 110000)), clrTransform(phClr, tint(90000)) 88000);
+  intense: lin(5400000, clrTransform(phClr, tint(96000), lum(#mod 100000)), clrTransform(phClr, shade(94000), lum(#mod 94000)) 78000);
+}
+
+fillStyle#background {
+  moderate: lin(5400000, clrTransform(phClr, tint(90000), lum(#mod 104000)), clrTransform(phClr, shade(96000), lum(#mod 82000)) 94000);
+  intense: path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000), lum(#mod 110000)), clrTransform(phClr, shade(94000), lum(#mod 96000)) 100000);
 }
 
 /**
