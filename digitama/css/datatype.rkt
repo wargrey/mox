@@ -37,7 +37,7 @@
 
 (define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
 
-(define-css-value mox-color-component-transform #:as MOX-Color-Component-Transform ([type : Symbol] [value : CSS-%]))
+(define-css-value mox-color-component-transform #:as MOX-Color-Component-Transform ([type : Symbol] [value : CSS-Flonum-%]))
 (define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Transform Symbol))]))
 
 (define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> css-gradient ([angle : Flonum] [stops : MOX-Linear-Color-Stops]))
@@ -102,37 +102,32 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-css-function-filter <mox-color-component-transform> #:-> MOX-Color-Component-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3
-  [(alpha)          #:=> [(mox-color-component-transform 'alpha      [value ? css-%?])]
+  [(alpha)          #:=> [(mox-color-component-transform 'alpha      [value ? css-%? flonum?])]
    <:nonneg-percent+mod+off:>]
-  [(red)            #:=> [(mox-color-component-transform 'red        [value ? css-%?])]
+  [(red)            #:=> [(mox-color-component-transform 'red        [value ? css-%? flonum?])]
    <:percent+mod+off:>]
-  [(green)          #:=> [(mox-color-component-transform 'green      [value ? css-%?])]
+  [(green)          #:=> [(mox-color-component-transform 'green      [value ? css-%? flonum?])]
    <:percent+mod+off:>]
-  [(blue)           #:=> [(mox-color-component-transform 'blue       [value ? css-%?])]
+  [(blue)           #:=> [(mox-color-component-transform 'blue       [value ? css-%? flonum?])]
    <:percent+mod+off:>]
-  [(hue)            #:=> [(mox-color-component-transform 'hue        [value ? css-%?])]
+  [(hue)            #:=> [(mox-color-component-transform 'hue        [value ? css-%? flonum?])]
    <:angle+mod+off:>]
-  [(sat saturation) #:=> [(mox-color-component-transform 'saturation [value ? css-%?])]
+  [(sat saturation) #:=> [(mox-color-component-transform 'saturation [value ? css-%? flonum?])]
    <:percent+mod+off:>]
-  [(lum luminance)  #:=> [(mox-color-component-transform 'luminance  [value ? css-%?])]
+  [(lum luminance)  #:=> [(mox-color-component-transform 'luminance  [value ? css-%? flonum?])]
    <:percent+mod+off:>]
   [(tint)           #:=> [(mox-color-component-transform 'tint       [value ? css-%?])]
    <:fixed-percentage:>]
   [(shade)          #:=> [(mox-color-component-transform 'shade      [value ? css-%?])]
    <:fixed-percentage:>]
   #:where
-  [(define-css-function-filter <mox-color-component-modulation> #:-> CSS+%
-     [(mod Mod modulation Modulation)#:=> [(values [value ? css+%?])] #:<+> (CSS:<^> (<mox+percentage>))])
+  [(define <:mod+off:>
+     (CSS<?> [(<css:hash> '(#:mod #:Mod #:modulation #:Modulation)) ((inst CSS:<^> Any) (<mox+percentage>))]
+             [(<css:hash> '(#:off #:Off #:offset #:Offset)) ((inst CSS:<^> Any) (<mox-percentage>))]))
 
-   (define-css-function-filter <mox-color-component-offset-percentage> #:-> CSS-%
-     [(off Off offset Offset) #:=> [(values [value ? css-%?])] #:<+> (CSS:<^> (<mox-percentage>))])
-
-   (define-css-function-filter <mox-color-component-offset-angle> #:-> Flonum
-     [(off Off offset Offset) #:=> [(values [value ? flonum?])] #:<+> (CSS:<^> (<mox-angle>))])
-
-   (define <:percent+mod+off:> (CSS:<^> (CSS:<+> (<mox-percentage>) (<mox-color-component-modulation>) (<mox-color-component-offset-percentage>))))
-   (define <:nonneg-percent+mod+off:> (CSS:<^> (CSS:<+> (<mox+percentage>) (<mox-color-component-modulation>) (<mox-color-component-offset-percentage>))))
-   (define <:angle+mod+off:> (CSS:<^> (CSS:<+> (<mox+angle>) (<mox-color-component-modulation>) (<mox-color-component-offset-angle>))))
+   (define <:percent+mod+off:> (CSS<+> (CSS:<^> (CSS:<~> (<mox-percentage>) css-%-value)) <:mod+off:>))
+   (define <:nonneg-percent+mod+off:> (CSS<+> (CSS:<^> (CSS:<~> (<mox+percentage>) css+%-value)) <:mod+off:>))
+   (define <:angle+mod+off:> (CSS<+> (CSS:<^> (<mox-angle>)) <:mod+off:>))
    (define <:fixed-percentage:> (CSS:<^> (<mox+percentage>)))])
 
 (define-css-function-filter <mox-system-color> #:-> MOX-System-Color-Datum

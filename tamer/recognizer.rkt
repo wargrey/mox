@@ -14,12 +14,12 @@
             (context "datatype" #:do
                      (context "color" #:do
                               (it-check "sysClr(windowText #954F72)" (<mox-color>) mox-color-datum?)
-                              (it-check "clrTransform(accent1, alpha(mod(61.8%)), tint(2021), shade(0706))" (<mox-color+transform>) mox-color-transform?)
+                              (it-check "clrTransform(accent1, alpha(#mod 61.8%), tint(2021), shade(0706))" (<mox-color+transform>) mox-color-transform?)
                               (it-check "clrTransform(scrollBar, inverse-gamma, gray, complement)" (<mox-color+transform>) mox-color-transform?)
                               (it-check "keyword-should-be-case-sensitive" (<mox-color>) #false))
 
                      (context "gradient" #:do
-                              (it-check "lin(5400000, clrTransform(phClr, tint(65000), lum(mod(110000))), clrTransform(phClr, tint(90000)) 88000)"
+                              (it-check "lin(5400000, clrTransform(phClr, tint(65000), lum(#mod 110000)), clrTransform(phClr, tint(90000)) 88000)"
                                         (<mox-fill-gradient>) css-gradient?))
                      
                      (context "font" #:do
