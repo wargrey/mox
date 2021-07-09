@@ -26,7 +26,9 @@
  * NOTE that, the reason why we employ CSS as the styling language is that
  *   the syntax of XML is a piece of shit, however the OpenXML employed by MS Office is even more cumbersome,
  *   as such, the logic structure of the favored CSS engine is just as distinct as it should be.
-
+ *
+ * A boolean value is represented as CSS integer, and interpreted as in C language.
+ *
  * A color can be one of CSS colors, OpenXML colors, and OpenXML color transforms.
  *   * CSS colors are preferable;
  *   * The OpenXML scheme colors are representated as CSS keywords; 
@@ -81,15 +83,21 @@ clrScheme {
  * fillStyleLst and bgFillStyleLst
  *
  * These schemes are associated with the element `fillStyle`
- * Both of them are lists and containing 3 styles, `subtle`, `moderate`, and `intense`,
- *   which are defined by properties with same names respectively.
- * Besides, `bgFillStyleLst` is defined as a `fillStyle` element identified by `background`, while
- *   `fillStyleLst` itself is identified by `shape`.
+ * Both of them are lists and containing 3 styles, `subtle`, `moderate`, and `intense`, which are defined by properties with same names respectively.
+ * Besides, `bgFillStyleLst` is defined as a `fillStyle` element identified by `background`, while `fillStyleLst` itself is identified by `shape`.
+ *
+ * Other properties prefixed with or without one of `subtle-`, `moderate-`, or `instense-` for setting other parameters if needed.
+ *   More precisely, a property without prefix sets a parameter for all fill styles as long as they accept the parameter; whereas
+ *   a property with a prefix only sets a parameter for the fill style specified by the prefix if it accepts the parameter.
+ *   * `rotate-with-shape` is a boolean property, corresponding to `rotWithShape`
+ *   * `tile-rectangle` is formed as `<flip>? <css-region>` (not the CSS shorthand form), corresponding to `flip` and `tileRect` of `gradFill`
+ *
  * As such, a `fillStyle` selector without ID can be used to share common properties.
  */
 
 fillStyle { /* for both #shape and #background */
   subtle: phClr; /* solid */
+  rotate-with-shape: 1;
 }
 
 fillStyle#shape {
