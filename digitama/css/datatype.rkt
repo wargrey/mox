@@ -23,6 +23,7 @@
 (define-type MOX-Fill-Style (U MOX-Color-Datum CSS-Image))
 (define-type MOX-Linear-Color-Stop (Pairof MOX-Fill-Style (Listof CSS-%)))
 (define-type MOX-Linear-Color-Stops (Pairof MOX-Linear-Color-Stop (Listof+ MOX-Linear-Color-Stop)))
+(define-type MOX-Tile-Rectangle (Listof (U CSS-Region Symbol)))
 
 (define-enumeration mox-system-color : MOX-System-Color
   [background scrollBar activeCaption inactiveCaption menu window windowFrame menuText windowText
@@ -43,8 +44,9 @@
 (define-css-value mox-color-component-alteration #:as MOX-Color-Component-Alteration ([type : Symbol] [value : CSS-Flonum-%]))
 (define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Raw-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Alteration Symbol))]))
 
-(define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> css-gradient ([angle : Flonum] [scaled : Boolean] [stops : MOX-Linear-Color-Stops]))
-(define-css-value mox-path-gradient #:as MOX-Path-Gradient #:=> css-gradient ([path : Symbol] [region : (Option CSS-Region)] [stops : MOX-Linear-Color-Stops]))
+(define-css-value mox-gradient #:as MOX-Gradient #:=> css-gradient ())
+(define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> mox-gradient ([angle : Flonum] [scaled : Boolean] [stops : MOX-Linear-Color-Stops]))
+(define-css-value mox-path-gradient #:as MOX-Path-Gradient #:=> mox-gradient ([path : Symbol] [region : (Option CSS-Region)] [stops : MOX-Linear-Color-Stops]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define <mox-system-color-keyword> : (CSS:Filter String)
@@ -167,7 +169,7 @@
 (define (<:mox-region:>) : (CSS-Parser (Listof CSS-Region))
   (<:css-region:> (CSS:<~> (<mox-percentage>) css-%-value)))
 
-(define (<:mox-tile-rectangle:>) : (CSS-Parser (Listof (U Symbol CSS-Region)))
+(define (<:mox-tile-rectangle:>) : (CSS-Parser MOX-Tile-Rectangle)
   (CSS<+> (CSS<&> (<:mox-region:>) (CSS:<*> (<css-keyword> mox-tile-flip-options) '?))
           (CSS<&> (CSS:<*> (<css-keyword> mox-tile-flip-options) '?) (<:mox-region:>))))
 
@@ -236,11 +238,16 @@
          ((inst is-listof? CSS-%) (cdr v) css-%?))))
 
 (define mox-linear-color-stop-list? : (-> Any Boolean : MOX-Linear-Color-Stops)
-  (lambda [datum]
-    (and (list? datum)
-         (pair? datum)
-         (mox-linear-color-stop? (car datum))
-         ((inst is-listof+? MOX-Linear-Color-Stop) (cdr datum) mox-linear-color-stop?))))
+  (lambda [cs]
+    (and (list? cs)
+         (pair? cs)
+         (mox-linear-color-stop? (car cs))
+         ((inst is-listof+? MOX-Linear-Color-Stop) (cdr cs) mox-linear-color-stop?))))
+
+(define mox-tile-rectangle? : (-> Any Boolean : MOX-Tile-Rectangle)
+  (let ([tile? (λ [v] (disjoin? v symbol? css-region?))])
+    (lambda [v]
+      (is-listof? v tile?))))
 
 (define mox-font-datum? : (-> Any Boolean : MOX-Font-Datum)
   (lambda [v]

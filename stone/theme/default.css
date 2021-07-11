@@ -37,7 +37,7 @@
  *   * The OpenXMl color tranformations are represented as the function `clrTransform(color, tranforms ...)`, where
  *       `transforms` are also representated as functions: alpha, red, green, blue, hue, sat, lum.  
  *
- *   The OpenXML keyword `phClr` is equivalent to the CSS keyword `currentcolor`
+ *   The CSS keyword `currentcolor` is equivalent to the OpenXML keyword `phClr`
  *   The OpenXML keywords are case sensitive, and so are their corresponding CSS keywords
  *
  * A fill can be one of CSS images, OpenXML fills.
@@ -98,6 +98,7 @@ clrScheme {
 fillStyle { /* for both #shape and #background */
   subtle: phClr; /* solid */
   rotate-with-shape: 1;
+  tile-rectangle: none;
 }
 
 fillStyle#shape {

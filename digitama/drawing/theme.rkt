@@ -10,7 +10,8 @@
 (require "../css/datatype.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type MOX-Fill-Datum (U MOX-Color-Datum MOX-Gradient-Fill))
+(define-type MOX-Clean-Color-Datum (U FlColor MOX-System-Color-Datum MOX-Scheme-Color MOX-Color-Transform))
+(define-type MOX-Fill-Datum (U MOX-Clean-Color-Datum MOX-Gradient-Fill))
 
 (define-type MOX-Font-Scripts (HashTable Symbol MOX-Font-Datum))
 
@@ -43,9 +44,9 @@
   #:transparent)
 
 (define-preference mox-gradient-fill : MOX-Gradient-Fill
-  ([datum : CSS-Image                               #:= #%mox-moderate-gradient-fill]
-   [tile-rectangle : (Listof (U CSS-Region Symbol)) #:= (list 'none)]
-   [rotation : Boolean                              #:= #true])
+  ([datum : CSS-Image                   #:= #%mox-moderate-gradient-fill]
+   [tile-rectangle : MOX-Tile-Rectangle #:= (list 'none)]
+   [rotate-with-shape : Boolean         #:= #true])
   #:transparent)
 
 (define-preference mox-fill-style : MOX-Fill-Style
@@ -106,23 +107,13 @@
                            #:accent5 (css-rgba-ref declared-values inherited-values 'accent5)
                            #:accent6 (css-rgba-ref declared-values inherited-values 'accent6))))
 
-(define mox-fillstyle-filter : (CSS-Cascaded-Value-Filter MOX-Color-Scheme)
+(define mox-fillstyle-filter : (CSS-Cascaded-Value-Filter MOX-Fill-Style)
   (lambda [declared-values inherited-values]
     (current-css-element-color (css-rgba-ref declared-values inherited-values))
-    
-    (make-mox-color-scheme #:dark1 (css-rgba-ref declared-values inherited-values 'dk1)
-                           #:dark2 (css-rgba-ref declared-values inherited-values 'dk2)
-                           #:light1 (css-rgba-ref declared-values inherited-values 'lt1)
-                           #:light2 (css-rgba-ref declared-values inherited-values 'lt2)
-                           #:hyperlink (css-rgba-ref declared-values inherited-values 'hlink)
-                           #:visited-link (css-rgba-ref declared-values inherited-values 'folhlink)
-                           
-                           #:accent1 (css-rgba-ref declared-values inherited-values 'accent1)
-                           #:accent2 (css-rgba-ref declared-values inherited-values 'accent2)
-                           #:accent3 (css-rgba-ref declared-values inherited-values 'accent3)
-                           #:accent4 (css-rgba-ref declared-values inherited-values 'accent4)
-                           #:accent5 (css-rgba-ref declared-values inherited-values 'accent5)
-                           #:accent6 (css-rgba-ref declared-values inherited-values 'accent6))))
+
+    (make-mox-fill-style #:subtle (css-fillstyle-ref declared-values inherited-values 'subtle)
+                         #:moderate (css-fillstyle-ref declared-values inherited-values 'moderate)
+                         #:intense (css-fillstyle-ref declared-values inherited-values 'intense))))
 
 (define mox-fontscheme-filter : (CSS-Cascaded-Value-Filter MOX-Font-Scheme)
   (lambda [declared-values inherited-values]
@@ -136,7 +127,7 @@
                                                   (values (string->symbol (string-titlecase (symbol->immutable-string s)))
                                                           (css-ref declared-values inherited-values s mox-font-datum? "")))]))))
 
-(define read-mox-theme-from-css : (->* (CSS-StdIn) (Symbol) Any)
+(define read-mox-theme-from-css : (->* (CSS-StdIn) (Symbol) MOX-Theme)
   (lambda [/dev/cssin [root-type 'base]]
     (css-root-element-type root-type)
 
@@ -149,7 +140,40 @@
     (define-values (headFont _maf) (css-cascade theme.css (list ~headFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
     (define-values (bodyFont _mif) (css-cascade theme.css (list ~bodyFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
 
-    headFont))
+    (mox-theme "Facet" clrScheme headFont bodyFont shapeFill backgFill)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define css->mox-fillstyle : (CSS->Racket (U MOX-Fill-Datum CSS-Image))
+  (lambda [desc-name v]
+    (cond [(css-image? v) v]
+          [(mox-color-transform? v) v]
+          [(mox-scheme-color? v) v]
+          [(mox-sysclr? v) v]
+          [else (let ([fillstyle (css->color desc-name v)])
+                  (cond [(css-wide-keyword? fillstyle) (#%mox-fill-style-subtle)]
+                        [(eq? fillstyle 'currentcolor) 'phClr]
+                        [else fillstyle]))])))
+
+(define css-fillstyle-ref : (-> CSS-Values (Option CSS-Values) Symbol MOX-Fill-Datum)
+  (lambda [declared-values inherited-values property]
+    (define fillstyle : (U MOX-Fill-Datum CSS-Image) (css-ref declared-values inherited-values property css->mox-fillstyle))
+
+    (cond [(not (css-image? fillstyle)) fillstyle]
+          [else (let ([tileRect (css-fillstyle-setting-ref declared-values inherited-values 'tile-rectangle property)]
+                      [rotWithShape (css-fillstyle-setting-ref declared-values inherited-values 'rotate-with-shape property)])
+                  (mox-gradient-fill fillstyle
+                                     (if (mox-tile-rectangle? tileRect) tileRect (#%mox-gradient-fill-tile-rectangle))
+                                     (and rotWithShape #true)))])))
+
+(define css-fillstyle-setting-ref : (-> CSS-Values (Option CSS-Values) Symbol Symbol Any)
+  (lambda [declared-values inherited-values property prefix]
+    (define prefixed-property (string->symbol (format "~a-~a" prefix property)))
+    (define p (css-ref declared-values inherited-values prefixed-property))
+
+    (cond [(not (css-wide-keyword? p)) p]
+          [else (let ([v (css-ref declared-values inherited-values property)])
+                  (cond [(css-wide-keyword? v) #false]
+                        [else v]))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #%mox-window-text : MOX-Color-Datum (cons "windowText" #x000000))
