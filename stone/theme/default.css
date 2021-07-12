@@ -40,7 +40,7 @@
  *   The CSS keyword `currentcolor` is equivalent to the OpenXML keyword `phClr`
  *   The OpenXML keywords are case sensitive, and so are their corresponding CSS keywords
  *
- * A fill can be one of CSS images, OpenXML fills.
+ * A fill style can be one of CSS images, OpenXML fills.
  *   * CSS images are preferable;
  *   * The `grpFill` and `noFill` are represented by CSS keywords `group` and `none`, respectively;
  *   * The `solidFill` is just any value of colors;
@@ -58,7 +58,7 @@
 /**
  * clrScheme
  *
- * This scheme is just straightforward
+ * This schemet, as well as the type selector, is just straightforward
  * There should be at least 12 properties defined as colors
  */
 
@@ -82,33 +82,69 @@ clrScheme {
 /**
  * fillStyleLst and bgFillStyleLst
  *
- * These schemes are associated with the element `fillStyle`
- * Both of them are lists and containing 3 styles, `subtle`, `moderate`, and `intense`, which are defined by properties with same names respectively.
- * Besides, `bgFillStyleLst` is defined as a `fillStyle` element identified by `background`, while `fillStyleLst` itself is identified by `shape`.
+ * These schemes are associated with the type selector `fillStyle`
+ * They both are lists and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected by pseudo-classes.
+ * Besides, `bgFillStyleLst` is selected by class `.background`, while `fillStyleLst` itself is selected by `.shape`.
+ * As such, a `fillStyle` selector without pseudo-class and/or class can be used to share common properties.
  *
- * Other properties prefixed with or without one of `subtle-`, `moderate-`, or `instense-` for setting other parameters if needed.
- *   More precisely, a property without prefix sets a parameter for all fill styles as long as they accept the parameter; whereas
- *   a property with a prefix only sets a parameter for the fill style specified by the prefix if it accepts the parameter.
- *   * `rotate-with-shape` is a boolean property, corresponding to `rotWithShape`
- *   * `tile-rectangle` is formed as `<flip>? <css-region>` (not the CSS shorthand form), corresponding to `flip` and `tileRect` of `gradFill`
- *
- * As such, a `fillStyle` selector without ID can be used to share common properties.
+ * The fill style value is associated with the property `datum`, and other properties are used to set other parameters if needed.
+ *   * rotate-with-shape, <css-boolean>,    rotWithShape
+ *   * tile-rectangle,    <css-region>,     tileRect
+ *   * tile-flip          <css-keyword>,    flip
  */
 
-fillStyle { /* for both #shape and #background */
-  subtle: phClr; /* solid */
+fillStyle { /* for all fill styles */
   rotate-with-shape: 1;
-  tile-rectangle: none;
+  tile-flip: none;
 }
 
-fillStyle#shape {
-  moderate: lin(5400000, clrTransform(phClr, tint(65000), lum(#mod 110000)), clrTransform(phClr, tint(90000)) 88000);
-  intense: lin(5400000, clrTransform(phClr, tint(96000), lum(#mod 100000)), clrTransform(phClr, shade(94000), lum(#mod 94000)) 78000);
+fillStyle:subtle { /* for both .shape and .background */
+  datum: phClr;
 }
 
-fillStyle#background {
-  moderate: lin(5400000, clrTransform(phClr, tint(90000), lum(#mod 104000)), clrTransform(phClr, shade(96000), lum(#mod 82000)) 94000);
-  intense: path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000), lum(#mod 110000)), clrTransform(phClr, shade(94000), lum(#mod 96000)) 100000);
+fillStyle:moderate.shape {
+  datum: lin(5400000, clrTransform(phClr, tint(65000), lum(#mod 110000)), clrTransform(phClr, tint(90000)) 88000);
+}
+
+fillStyle:moderate.background {
+  datum: lin(5400000, clrTransform(phClr, tint(90000), lum(#mod 104000)), clrTransform(phClr, shade(96000), lum(#mod 82000)) 94000);
+}
+
+fillStyle:intense.shape {
+  datum: lin(5400000, clrTransform(phClr, tint(96000), lum(#mod 100000)), clrTransform(phClr, shade(94000), lum(#mod 94000)) 78000);
+}
+
+fillStyle:intense.background {
+  datum: path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000), lum(#mod 110000)), clrTransform(phClr, shade(94000), lum(#mod 96000)) 100000);
+}
+
+/**
+ * lnStyleLst
+ *
+ * This scheme is associated with the type selector `lineStyle`
+ * It is a list and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected by pseudo-classes.
+ * As such, a `lineStyle` selector without pseudo-class and/or class can be used to share common properties.
+ */
+
+lineStyle {
+  fill: phClr;    /* all fill are accepted */
+  pen-align: ctr; /* corresponds to `algn` */
+  end-cap: rnd;   /* corresponds to `cap` */
+  compound: sng;  /* corresponds to `cmpd` */
+  join: none;     /* 'bevel, 'miter, 'round, and miter join limit */
+  dash: solid;    /* corresponds to `prstDash` and `custDash` */
+}
+
+lineStyle:subtle {
+  width: 12700;
+}
+
+lineStyle:moderate {
+  width: 19050;
+}
+
+lineStyle:intense {
+  width: 25400;
 }
 
 /**

@@ -23,7 +23,8 @@
 (define-type MOX-Fill-Style (U MOX-Color-Datum CSS-Image))
 (define-type MOX-Linear-Color-Stop (Pairof MOX-Fill-Style (Listof CSS-%)))
 (define-type MOX-Linear-Color-Stops (Pairof MOX-Linear-Color-Stop (Listof+ MOX-Linear-Color-Stop)))
-(define-type MOX-Tile-Rectangle (Listof (U CSS-Region Symbol)))
+(define-type MOX-Line-Join-Datum (U Symbol Nonnegative-Flonum))
+(define-type MOX-Line-Dash-Datum (U Symbol MOX-Line-Dasharray))
 
 (define-enumeration mox-system-color : MOX-System-Color
   [background scrollBar activeCaption inactiveCaption menu window windowFrame menuText windowText
@@ -38,11 +39,19 @@
 
 (define-enumeration mox-path-gradient-shape : MOX-Path-Gradient-Shape [circle rect shape])
 (define-enumeration mox-tile-flip-option : MOX-Tile-Flip [none x y xy])
+(define-enumeration mox-special-fill : MOX-Special-Fill [none group])
+
+(define-enumeration mox-pen-alignment-option : MOX-Pen-Alignment [ctr in])
+(define-enumeration mox-end-cap-type : MOX-End-Cap-Type [flat rnd sq])
+(define-enumeration mox-compound-line-type : MOX-Compound-Line-Type [dbl sng thickThin thinThick tri])
+(define-enumeration mox-line-join-type : MOX-Line-Join-Type [none bevel miter round])
+(define-enumeration mox-preset-dash-name : MOX-Prefab-Dash-Name [solid dash dot dashDot lgDash lgDashDot lgDashDotDot sysDash sysDashDot sysDashDotDot sysDot])
 
 (define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
 
 (define-css-value mox-color-component-alteration #:as MOX-Color-Component-Alteration ([type : Symbol] [value : CSS-Flonum-%]))
 (define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Raw-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Alteration Symbol))]))
+(define-css-value mox-line-dasharray #:as MOX-Line-Dasharray ([stops : (Listof Nonnegative-Flonum)]))
 
 (define-css-value mox-gradient #:as MOX-Gradient #:=> css-gradient ())
 (define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> mox-gradient ([angle : Flonum] [scaled : Boolean] [stops : MOX-Linear-Color-Stops]))
@@ -109,8 +118,8 @@
   [(path-gradient-fill path)
    #:=> [(mox-path-gradient [path ? symbol?] [region ? css-region?] [stops ? mox-linear-color-stop-list?])
          (mox-path-gradient 'default [region ? css-region?] [stops ? mox-linear-color-stop-list?])
-         (mox-path-gradient [path ? symbol?] css-no-region [stops ? mox-linear-color-stop-list?])
-         (mox-path-gradient 'default css-no-region [stops ? mox-linear-color-stop-list?])]
+         (mox-path-gradient [path ? symbol?] css-full-region [stops ? mox-linear-color-stop-list?])
+         (mox-path-gradient 'default css-full-region [stops ? mox-linear-color-stop-list?])]
    (CSS<&> (css-comma-followed-parser (<:path-region:>)) (<:mox-length-color-stop:>))]
   #:where
   [(define (<:mox-length-color-stop:>) (<:css-color-stop-list:> (CSS:<^> (<mox-color>)) (<mox+percentage>)))
@@ -145,7 +154,12 @@
 (define-css-disjoint-filter <mox-fill-style> #:-> (U MOX-Color-Datum CSS-Gradient CSS-Wide-Keyword)
   (<mox-color>)
   (<css-gradient-notation>)
-  (<mox-fill-gradient>))
+  (<mox-fill-gradient>)
+  (<css-keyword> mox-special-fills))
+
+(define-css-disjoint-filter <mox-line-join> #:-> (U Symbol Nonnegative-Flonum)
+  (<css-keyword> mox-line-join-types)
+  (CSS:<~> (<mox+percentage> mox+positive-percentage) css+%-value))
 
 (define-css-disjoint-filter <mox-font> #:-> (U MOX-Font-Datum CSS-Wide-Keyword)
   (<css:string>)
@@ -156,8 +170,9 @@
   (CSS:<~> (<css:integer>) mox-fixed-percentage))
 
 (define-css-disjoint-filter <mox+percentage> #:-> CSS+%
+  #:with [[css->racket : (-> Natural CSS+%) mox+fixed-percentage]]
   (<css+percentage>)
-  (CSS:<~> (<css:integer> nonnegative-fixnum?) mox+fixed-percentage))
+  (CSS:<~> (<css:integer> nonnegative-fixnum?) css->racket))
 
 (define-css-disjoint-filter <mox-angle> #:-> Flonum
   (CSS:<~> (<css:integer>) mox-angle))
@@ -165,13 +180,17 @@
 (define-css-disjoint-filter <mox+angle> #:-> Nonnegative-Flonum
   (CSS:<~> (<css:integer> nonnegative-fixnum?) mox-angle))
 
+(define-css-disjoint-filter <mox-line-width> #:-> Nonnegative-Flonum
+  (<css+length>)
+  (CSS:<~> (<css-natural>) mox-line-width))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (<:mox-region:>) : (CSS-Parser (Listof CSS-Region))
   (<:css-region:> (CSS:<~> (<mox-percentage>) css-%-value)))
 
-(define (<:mox-tile-rectangle:>) : (CSS-Parser MOX-Tile-Rectangle)
-  (CSS<+> (CSS<&> (<:mox-region:>) (CSS:<*> (<css-keyword> mox-tile-flip-options) '?))
-          (CSS<&> (CSS:<*> (<css-keyword> mox-tile-flip-options) '?) (<:mox-region:>))))
+(define (<:mox-line-dash:>) : (CSS-Parser (Listof MOX-Line-Dash-Datum))
+  (CSS<+> (CSS:<^> (<css-keyword> mox-preset-dash-names))
+          (CSS<~> (CSS:<*> (<mox+percentage> mox+positive-percentage) '(2 . inf)) mox-line-custom-dash)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define <mox-panose> : (CSS:Filter Keyword)
@@ -191,10 +210,22 @@
   (lambda [v]
     (make-css+% (* (real->double-flonum v) 0.00001))))
 
+(define mox+positive-percentage : (-> Natural CSS+%)
+  (lambda [v]
+    (make-css+% (* (real->double-flonum v) 0.0001))))
+
 (define mox-angle : (case-> [Natural -> Nonnegative-Flonum]
                             [Integer -> Flonum])
   (lambda [v]
     (real->double-flonum (/ v 60000))))
+
+(define mox-line-width : (-> Natural Nonnegative-Flonum)
+  (lambda [v]
+    (css-length->scalar (real->double-flonum (/ v 12700)) 'pt)))
+
+(define mox-line-custom-dash : (-> (Listof CSS+%) MOX-Line-Dasharray)
+  (lambda [da]
+    (mox-line-dasharray (map css+%-value da))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-raw-color-datum? : (-> Any Boolean : MOX-Raw-Color-Datum)
@@ -244,10 +275,15 @@
          (mox-linear-color-stop? (car cs))
          ((inst is-listof+? MOX-Linear-Color-Stop) (cdr cs) mox-linear-color-stop?))))
 
-(define mox-tile-rectangle? : (-> Any Boolean : MOX-Tile-Rectangle)
-  (let ([tile? (λ [v] (disjoin? v symbol? css-region?))])
-    (lambda [v]
-      (is-listof? v tile?))))
+(define mox-line-join-datum? : (-> Any Boolean : #:+ MOX-Line-Join-Datum)
+  (lambda [v]
+    (or (symbol? v)
+        (nonnegative-flonum? v))))
+
+(define mox-line-dash-datum? : (-> Any Boolean : #:+ MOX-Line-Dash-Datum)
+  (lambda [v]
+    (or (symbol? v)
+        (mox-line-dasharray? v))))
 
 (define mox-font-datum? : (-> Any Boolean : MOX-Font-Datum)
   (lambda [v]
