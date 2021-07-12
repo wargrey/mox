@@ -147,8 +147,6 @@
   (lambda [declared-values inherited-values]
     (current-css-element-color (css-rgba-ref declared-values inherited-values))
 
-    (displayln (css-ref declared-values inherited-values 'dash))
-
     (make-mox-line #:fill (mox-extract-fill declared-values inherited-values 'fill)
                    #:align (css-ref declared-values inherited-values 'pen-align symbol? (#%mox-line-align))
                    #:cap (css-ref declared-values inherited-values 'end-cap symbol? (#%mox-line-cap))
@@ -226,20 +224,20 @@
 ; untested default values
 (define #%mox-moderate-gradient-fill : CSS-Image
   (mox-linear-gradient  (mox-angle 5400000) #false
-                        (list (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+fixed-percentage 65000))
-                                                                      (mox-color-component-alteration 'luminance (mox+fixed-percentage 110000))))
-                                    (list (mox+fixed-percentage 0)))
-                              (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox-fixed-percentage 90000))))
-                                    (list (mox+fixed-percentage 88000))))))
+                        (list (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+1000ths-percentage 65000))
+                                                                      (mox-color-component-alteration 'luminance (mox+1000ths-percentage 110000))))
+                                    (list (mox+1000ths-percentage 0)))
+                              (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+1000ths-percentage 90000))))
+                                    (list (mox+1000ths-percentage 88000))))))
 
 (define #%mox-intense-gradient-fill : CSS-Image
   (mox-linear-gradient  (mox-angle 5400000) #false
-                        (list (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+fixed-percentage 96000))
-                                                                      (mox-color-component-alteration 'luminance (mox+fixed-percentage 104000))))
-                                    (list (mox+fixed-percentage 0)))
-                              (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'shade (mox-fixed-percentage 94000))
-                                                                      (mox-color-component-alteration 'luminance (mox+fixed-percentage 94000))))
-                                    (list (mox+fixed-percentage 78000))))))
+                        (list (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+1000ths-percentage 96000))
+                                                                      (mox-color-component-alteration 'luminance (mox+1000ths-percentage 104000))))
+                                    (list (mox+1000ths-percentage 0)))
+                              (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'shade (mox+1000ths-percentage 94000))
+                                                                      (mox-color-component-alteration 'luminance (mox+1000ths-percentage 94000))))
+                                    (list (mox+1000ths-percentage 78000))))))
 
 (define #%mox-moderate-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:datum #%mox-moderate-gradient-fill))
 (define #%mox-intense-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:datum #%mox-intense-gradient-fill))

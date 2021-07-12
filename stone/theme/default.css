@@ -124,6 +124,8 @@ fillStyle:intense.background {
  * This scheme is associated with the type selector `lineStyle`
  * It is a list and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected by pseudo-classes.
  * As such, a `lineStyle` selector without pseudo-class and/or class can be used to share common properties.
+ *
+ * NOTICE that CSS data are not supported for `lineStyle` meanwhile
  */
 
 lineStyle {

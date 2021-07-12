@@ -51,7 +51,7 @@
 
 (define-css-value mox-color-component-alteration #:as MOX-Color-Component-Alteration ([type : Symbol] [value : CSS-Flonum-%]))
 (define-css-value mox-color-transform #:as MOX-Color-Transform ([target : MOX-Raw-Color-Datum] [alterations : (Listof (U MOX-Color-Component-Alteration Symbol))]))
-(define-css-value mox-line-dasharray #:as MOX-Line-Dasharray ([stops : (Listof Nonnegative-Flonum)]))
+(define-css-value mox-line-dasharray #:as MOX-Line-Dasharray ([stops : (Listof (Pairof Nonnegative-Flonum Nonnegative-Flonum))]))
 
 (define-css-value mox-gradient #:as MOX-Gradient #:=> css-gradient ())
 (define-css-value mox-linear-gradient #:as MOX-Linear-Gradient #:=> mox-gradient ([angle : Flonum] [scaled : Boolean] [stops : MOX-Linear-Color-Stops]))
@@ -159,7 +159,7 @@
 
 (define-css-disjoint-filter <mox-line-join> #:-> (U Symbol Nonnegative-Flonum)
   (<css-keyword> mox-line-join-types)
-  (CSS:<~> (<mox+percentage> mox+positive-percentage) css+%-value))
+  (CSS:<~> (<mox+percentage> mox+1000ths-percentage) css+%-value))
 
 (define-css-disjoint-filter <mox-font> #:-> (U MOX-Font-Datum CSS-Wide-Keyword)
   (<css:string>)
@@ -167,10 +167,10 @@
 
 (define-css-disjoint-filter <mox-percentage> #:-> CSS-%
   (<css-percentage>)
-  (CSS:<~> (<css:integer>) mox-fixed-percentage))
+  (CSS:<~> (<css:integer>) mox-1000ths-percentage))
 
 (define-css-disjoint-filter <mox+percentage> #:-> CSS+%
-  #:with [[css->racket : (-> Natural CSS+%) mox+fixed-percentage]]
+  #:with [[css->racket : (-> Natural CSS+%) mox+1000ths-percentage]]
   (<css+percentage>)
   (CSS:<~> (<css:integer> nonnegative-fixnum?) css->racket))
 
@@ -190,7 +190,7 @@
 
 (define (<:mox-line-dash:>) : (CSS-Parser (Listof MOX-Line-Dash-Datum))
   (CSS<+> (CSS:<^> (<css-keyword> mox-preset-dash-names))
-          (CSS<~> (CSS:<*> (<mox+percentage> mox+positive-percentage) '(2 . inf)) mox-line-custom-dash)))
+          (CSS<~> (CSS<#> (CSS<~> (CSS:<*> (<mox+percentage> mox+1000ths-percentage) '2) mox-line-dash-stop) '+) mox-line-dasharray)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define <mox-panose> : (CSS:Filter Keyword)
@@ -202,17 +202,13 @@
                       number))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-fixed-percentage : (-> Integer CSS-%)
+(define mox-1000ths-percentage : (-> Integer CSS-%)
   (lambda [v]
     (make-css-% (* (exact->inexact v) 0.00001))))
 
-(define mox+fixed-percentage : (-> Natural CSS+%)
+(define mox+1000ths-percentage : (-> Natural CSS+%)
   (lambda [v]
     (make-css+% (* (real->double-flonum v) 0.00001))))
-
-(define mox+positive-percentage : (-> Natural CSS+%)
-  (lambda [v]
-    (make-css+% (* (real->double-flonum v) 0.0001))))
 
 (define mox-angle : (case-> [Natural -> Nonnegative-Flonum]
                             [Integer -> Flonum])
@@ -223,9 +219,11 @@
   (lambda [v]
     (css-length->scalar (real->double-flonum (/ v 12700)) 'pt)))
 
-(define mox-line-custom-dash : (-> (Listof CSS+%) MOX-Line-Dasharray)
+(define mox-line-dash-stop : (-> (Listof CSS+%) (CSS-Option (Pairof Nonnegative-Flonum Nonnegative-Flonum)))
   (lambda [da]
-    (mox-line-dasharray (map css+%-value da))))
+    (and (pair? da) (pair? (cdr da))
+         (cons (css+%-value (car da))
+               (css+%-value (cadr da))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-raw-color-datum? : (-> Any Boolean : MOX-Raw-Color-Datum)
