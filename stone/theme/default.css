@@ -125,7 +125,7 @@ fillStyle:intense.background {
  * It is a list and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected by pseudo-classes.
  * As such, a `lineStyle` selector without pseudo-class and/or class can be used to share common properties.
  *
- * NOTICE that CSS data are not supported for `lineStyle` meanwhile
+ * NOTICE that CSS keywords are not supported for `lineStyle` meanwhile
  */
 
 lineStyle {
@@ -135,6 +135,8 @@ lineStyle {
   compound: sng;  /* corresponds to `cmpd` */
   join: none;     /* 'bevel, 'miter, 'round, and miter join limit */
   dash: solid;    /* corresponds to `prstDash` and `custDash` */
+  head: none;     /* corresponds to `headEnd` */
+  tail: none;     /* corresponds to `tailEnd` */
 }
 
 lineStyle:subtle {

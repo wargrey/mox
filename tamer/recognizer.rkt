@@ -27,6 +27,13 @@
                                         (<mox-fill-gradient>) css-gradient?)
                               (it-check "path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000)), clrTransform(phClr, shade(94000)) 100000)"
                                         (<mox-fill-gradient>) css-gradient?))
+
+                     (context "line style" #:do
+                              (it-check "arrow med" (<:mox-line-end-shape:>) (list mox-line-end-type? mox-line-end-size-option?))
+                              (it-check "lg diamond" (<:mox-line-end-shape:>) (list mox-line-end-size-option? mox-line-end-type?))
+                              (it-check "stealth lg sm" (<:mox-line-end-shape:>) (list mox-line-end-type? mox-line-end-size-option? mox-line-end-size-option?))
+                              (it-check "med sm triangle" (<:mox-line-end-shape:>) (list mox-line-end-size-option? mox-line-end-size-option? mox-line-end-type?))
+                              (it-check "lg oval sm" (<:mox-line-end-shape:>) (list mox-line-end-size-option? mox-line-end-type? mox-line-end-size-option?)))
                      
                      (context "font" #:do
                               (it-check "\"新細明體\"" (<mox-font>) mox-font-datum?)

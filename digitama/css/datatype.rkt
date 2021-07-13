@@ -46,6 +46,8 @@
 (define-enumeration mox-compound-line-type : MOX-Compound-Line-Type [dbl sng thickThin thinThick tri])
 (define-enumeration mox-line-join-type : MOX-Line-Join-Type [none bevel miter round])
 (define-enumeration mox-preset-dash-name : MOX-Prefab-Dash-Name [solid dash dot dashDot lgDash lgDashDot lgDashDotDot sysDash sysDashDot sysDashDotDot sysDot])
+(define-enumeration mox-line-end-size-option : MOX-Line-End-Size-Option [lg med sm]) ; for both length and width
+(define-enumeration mox-line-end-type : MOX-Line-End-Type [none arrow diamond oval stealth triangle])
 
 (define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
 
@@ -191,6 +193,11 @@
 (define (<:mox-line-dash:>) : (CSS-Parser (Listof MOX-Line-Dash-Datum))
   (CSS<+> (CSS:<^> (<css-keyword> mox-preset-dash-names))
           (CSS<~> (CSS<#> (CSS<~> (CSS:<*> (<mox+percentage> mox+1000ths-percentage) '2) mox-line-dash-stop) '+) mox-line-dasharray)))
+
+(define (<:mox-line-end-shape:>) : (CSS-Parser (Listof Symbol))
+  (CSS<++> (CSS:<^> (<css-keyword> mox-line-end-types))
+           (CSS:<^> (<css-keyword> mox-line-end-size-options))
+           (CSS:<*> (<css-keyword> mox-line-end-size-options) '?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define <mox-panose> : (CSS:Filter Keyword)

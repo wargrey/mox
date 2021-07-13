@@ -5,7 +5,7 @@
 (require css)
 (require css/digitama/image)
 
-(require racket/symbol)
+(require digimon/symbol)
 
 (require "../css/datatype.rkt")
 
@@ -64,7 +64,9 @@
    [compound : Symbol          #:= 'sng]
    [width : Nonnegative-Flonum #:= 0.0]
    [join : MOX-Line-Join-Datum #:= 'none]
-   [dash : MOX-Line-Dash-Datum #:= 'solid])
+   [dash : MOX-Line-Dash-Datum #:= 'solid]
+   [head : (Listof Symbol)     #:= '(none)]
+   [tail : (Listof Symbol)     #:= '(none)])
   #:transparent)
 
 (define-preference mox-line-style : MOX-Line-Style
@@ -114,7 +116,8 @@
       [(compound) (<css-keyword/cs> mox-compound-line-types)]
       [(width) (<mox-line-width>)]
       [(join) (<mox-line-join>)]
-      [(dash) (<:mox-line-dash:>)])))
+      [(dash) (<:mox-line-dash:>)]
+      [(head tail) (<:mox-line-end-shape:>)])))
 
 (define mox-fontscheme-parsers : CSS-Declaration-Parsers
   (lambda [suitcased-name deprecated!]
@@ -153,7 +156,9 @@
                    #:compound (css-ref declared-values inherited-values 'compound symbol? (#%mox-line-compound))
                    #:width (css-ref declared-values inherited-values 'width nonnegative-flonum? (#%mox-line-width))
                    #:join (css-ref declared-values inherited-values 'join mox-line-join-datum? (#%mox-line-join))
-                   #:dash (css-ref declared-values inherited-values 'dash (make-css->unboxed-datum mox-line-dash-datum? (#%mox-line-dash))))))
+                   #:dash (css-ref declared-values inherited-values 'dash (make-css->unboxed-datum mox-line-dash-datum? (#%mox-line-dash)))
+                   #:head (css-ref declared-values inherited-values 'head symbol-list*? (#%mox-line-head))
+                   #:tail (css-ref declared-values inherited-values 'tail symbol-list*? (#%mox-line-tail)))))
 
 (define mox-fontscheme-filter : (CSS-Cascaded-Value-Filter MOX-Font-Scheme)
   (lambda [declared-values inherited-values]
