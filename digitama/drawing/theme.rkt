@@ -44,20 +44,15 @@
   #:transparent)
 
 (define-preference mox-gradient-fill : MOX-Gradient-Fill
-  ([datum : CSS-Image                   #:= #%mox-moderate-gradient-fill]
+  ; Fundamentals and Markup Language Reference, 20.1.4.1.13
+  ([datum : CSS-Image                   #:= #%mox-gradient-fill]
    [tile-rectangle : CSS-Region         #:= css-full-region]
    [flip : Symbol                       #:= 'none]
    [rotate-with-shape : CSS-Boolean     #:= 1])
   #:transparent)
 
-(define-preference mox-fill-style : MOX-Fill-Style
-  ; Fundamentals and Markup Language Reference, 20.1.4.1.13
-  ([subtle : MOX-Fill-Datum   #:= 'phClr]
-   [moderate : MOX-Fill-Datum #:= #%mox-moderate-fill]
-   [intense : MOX-Fill-Datum  #:= #%mox-intense-fill])
-  #:transparent)
-
 (define-preference mox-line : MOX-Line
+  ; Fundamentals and Markup Language Reference, 20.1.4.1.21
   ([fill : MOX-Fill-Datum      #:= 'phClr]
    [align : Symbol             #:= 'ctr]
    [cap : Symbol               #:= 'rnd]
@@ -69,31 +64,24 @@
    [tail : (Listof Symbol)     #:= '(none)])
   #:transparent)
 
-(define-preference mox-line-style : MOX-Line-Style
-  ; Fundamentals and Markup Language Reference, 20.1.4.1.21
-  ([subtle : MOX-Line   #:= #%mox-default-line]
-   [moderate : MOX-Line #:= #%mox-default-line]
-   [intense : MOX-Line  #:= #%mox-default-line])
-  #:transparent)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct mox-theme
   ([name : String]
    [color : MOX-Color-Scheme]
    [major-font : MOX-Font-Scheme] ; a.k.a heading font
    [minor-font : MOX-Font-Scheme] ; a.k.a body font
-   [fill-style : MOX-Fill-Style]
-   [bg-fill-style : MOX-Fill-Style]
-   [line-style : MOX-Line-Style])
+   [fill-styles : (Listof MOX-Fill-Datum)]
+   [bg-fill-styles : (Listof MOX-Fill-Datum)]
+   [line-styles : (Listof MOX-Line)])
   #:type-name MOX-Theme
   #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define ~clrScheme : CSS-Subject (make-css-subject #:type 'clrScheme #::classes '(root)))
-(define ~headFont : CSS-Subject (make-css-subject #:type 'fontScheme #:id '#:head))
-(define ~bodyFont : CSS-Subject (make-css-subject #:type 'fontScheme #:id '#:body))
-(define (~fillStyle [psuedo : Symbol] [class : Symbol]) : CSS-Subject (make-css-subject #:type 'fillStyle #::classes `(,psuedo) #:classes `(,class)))
-(define (~lineStyle [psuedo : Symbol]) : CSS-Subject (make-css-subject #:type 'lineStyle #::classes `(,psuedo)))
+(define ~headFont : CSS-Subject (make-css-subject #:type 'fontScheme #:classes '(head)))
+(define ~bodyFont : CSS-Subject (make-css-subject #:type 'fontScheme #:classes '(body)))
+(define ~lineStyle : CSS-Subject (make-css-subject #:type 'lineStyle))
+(define (~fillStyle [class : Symbol]) : CSS-Subject (make-css-subject #:type 'fillStyle #:classes `(,class)))
 
 (define mox-clrscheme-parsers : CSS-Declaration-Parsers
   (lambda [suitcased-name deprecated!]
@@ -141,12 +129,12 @@
                            #:accent5 (css-rgba-ref declared-values inherited-values 'accent5)
                            #:accent6 (css-rgba-ref declared-values inherited-values 'accent6))))
 
-(define mox-fill-filter : (CSS-Cascaded-Value-Filter MOX-Fill-Datum)
+(define mox-fillstyle-filter : (CSS-Cascaded-Value-Filter MOX-Fill-Datum)
   (lambda [declared-values inherited-values]
     (current-css-element-color (css-rgba-ref declared-values inherited-values))
     (mox-extract-fill declared-values inherited-values 'datum)))
 
-(define mox-line-filter : (CSS-Cascaded-Value-Filter MOX-Line)
+(define mox-linestyle-filter : (CSS-Cascaded-Value-Filter MOX-Line)
   (lambda [declared-values inherited-values]
     (current-css-element-color (css-rgba-ref declared-values inherited-values))
 
@@ -172,8 +160,10 @@
                                                   (values (string->symbol (string-titlecase (symbol->immutable-string s)))
                                                           (css-ref declared-values inherited-values s mox-font-datum? "")))]))))
 
-(define read-mox-theme-from-css : (->* (CSS-StdIn) (Symbol) MOX-Theme)
-  (lambda [/dev/cssin [root-type 'base]]
+(define read-mox-theme-from-css : (->* (CSS-StdIn)
+                                       (Symbol #:fill-count Positive-Index #:bg-fill-count Positive-Index #:line-count Positive-Index)
+                                       MOX-Theme)
+  (lambda [/dev/cssin [root-type 'base] #:fill-count [fill-count 3] #:bg-fill-count [bg-fill-count 3] #:line-count [line-count 3]]
     (css-root-element-type root-type)
 
     (define theme.css : CSS-Stylesheet (read-css-stylesheet /dev/cssin))
@@ -182,23 +172,23 @@
     (define-values (clrScheme _clr) (css-cascade theme.css (list ~clrScheme ~root) mox-clrscheme-parsers mox-clrscheme-filter *root))
     (define-values (headFont _maf) (css-cascade theme.css (list ~headFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
     (define-values (bodyFont _mif) (css-cascade theme.css (list ~bodyFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
-    (define-values (ln-subtle _sub) (css-cascade theme.css (list (~lineStyle 'subtle)   ~root) mox-linestyle-parsers mox-line-filter *root))
-    (define-values (ln-moderate _m) (css-cascade theme.css (list (~lineStyle 'moderate) ~root) mox-linestyle-parsers mox-line-filter *root))
-    (define-values (ln-intense _in) (css-cascade theme.css (list (~lineStyle 'intense)  ~root) mox-linestyle-parsers mox-line-filter *root))
-    (define shapeFill (css-cascade-fill-style 'shape theme.css ~root *root))
-    (define backgFill (css-cascade-fill-style 'background theme.css ~root *root))
+    (define shapeFills (css-cascade-styles fill-count theme.css (list (~fillStyle 'shape) ~root) *root mox-fillstyle-parsers mox-fillstyle-filter))
+    (define backgFills (css-cascade-styles bg-fill-count theme.css (list (~fillStyle 'background) ~root) *root mox-fillstyle-parsers mox-fillstyle-filter))
+    (define lines (css-cascade-styles line-count theme.css (list ~lineStyle ~root) *root mox-linestyle-parsers mox-linestyle-filter))
 
-    (mox-theme "Facet" clrScheme headFont bodyFont shapeFill backgFill
-               (make-mox-line-style #:subtle ln-subtle #:moderate ln-moderate #:intense ln-intense))))
+    (mox-theme "Facet" clrScheme headFont bodyFont shapeFills backgFills lines)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define css-cascade-fill-style : (-> Symbol CSS-Stylesheet CSS-Subject CSS-Values MOX-Fill-Style)
-  (lambda [class theme.css ~root *root]
-    (define-values (subtle _sub) (css-cascade theme.css (list (~fillStyle 'subtle class)   ~root) mox-fillstyle-parsers mox-fill-filter *root))
-    (define-values (moderate _m) (css-cascade theme.css (list (~fillStyle 'moderate class) ~root) mox-fillstyle-parsers mox-fill-filter *root))
-    (define-values (intense _in) (css-cascade theme.css (list (~fillStyle 'intense class)  ~root) mox-fillstyle-parsers mox-fill-filter *root))
-
-    (make-mox-fill-style #:subtle subtle #:moderate moderate #:intense intense)))
+(define css-cascade-styles : (All (s) (-> Positive-Index CSS-Stylesheet (Pairof CSS-Subject (Listof CSS-Subject)) CSS-Values
+                                          CSS-Declaration-Parsers (CSS-Cascaded-Value-Filter s)
+                                          (Listof s)))
+  (lambda [total theme.css ~subjects *root parsers filter]
+    (parameterize ([current-css-children-count total])
+      (let cascade-style ([idx : Positive-Integer 1]
+                          [selyts : (Listof s) null])
+        (cond [(> idx total) (reverse selyts)]
+              [else (let-values ([(style _) (parameterize ([current-css-child-index idx]) (css-cascade theme.css ~subjects parsers filter *root))])
+                      (cascade-style (add1 idx) (cons style selyts)))])))))
 
 (define mox-extract-fill : (-> CSS-Values (Option CSS-Values) Symbol MOX-Fill-Datum)
   (lambda [declared-values inherited-values property]
@@ -218,7 +208,7 @@
           [(mox-sysclr? v) v]
           [(mox-special-fill? v) v]
           [else (let ([fillstyle (css->color desc-name v)])
-                  (cond [(css-wide-keyword? fillstyle) (#%mox-fill-style-subtle)]
+                  (cond [(css-wide-keyword? fillstyle) 'phClr]
                         [(eq? fillstyle 'currentcolor) 'phClr]
                         [else fillstyle]))])))
 
@@ -227,25 +217,13 @@
 (define #%mox-window : MOX-Color-Datum (cons "window" #xFFFFFF))
 
 ; untested default values
-(define #%mox-moderate-gradient-fill : CSS-Image
+(define #%mox-gradient-fill : CSS-Image
   (mox-linear-gradient  (mox-angle 5400000) #false
                         (list (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+1000ths-percentage 65000))
                                                                       (mox-color-component-alteration 'luminance (mox+1000ths-percentage 110000))))
                                     (list (mox+1000ths-percentage 0)))
                               (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+1000ths-percentage 90000))))
                                     (list (mox+1000ths-percentage 88000))))))
-
-(define #%mox-intense-gradient-fill : CSS-Image
-  (mox-linear-gradient  (mox-angle 5400000) #false
-                        (list (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'tint (mox+1000ths-percentage 96000))
-                                                                      (mox-color-component-alteration 'luminance (mox+1000ths-percentage 104000))))
-                                    (list (mox+1000ths-percentage 0)))
-                              (cons (mox-color-transform 'phClr (list (mox-color-component-alteration 'shade (mox+1000ths-percentage 94000))
-                                                                      (mox-color-component-alteration 'luminance (mox+1000ths-percentage 94000))))
-                                    (list (mox+1000ths-percentage 78000))))))
-
-(define #%mox-moderate-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:datum #%mox-moderate-gradient-fill))
-(define #%mox-intense-fill : MOX-Gradient-Fill (make-mox-gradient-fill #:datum #%mox-intense-gradient-fill))
 
 (define #%mox-default-line : MOX-Line (make-mox-line))
 

@@ -98,23 +98,23 @@ fillStyle { /* for all fill styles */
   tile-flip: none;
 }
 
-fillStyle:subtle { /* for both .shape and .background */
+fillStyle:first-child { /* for both .shape and .background */
   datum: phClr;
 }
 
-fillStyle:moderate.shape {
+fillStyle:nth-child(2).shape {
   datum: lin(5400000, clrTransform(phClr, tint(65000), lum(#mod 110000)), clrTransform(phClr, tint(90000)) 88000);
 }
 
-fillStyle:moderate.background {
+fillStyle:nth-child(2).background {
   datum: lin(5400000, clrTransform(phClr, tint(90000), lum(#mod 104000)), clrTransform(phClr, shade(96000), lum(#mod 82000)) 94000);
 }
 
-fillStyle:intense.shape {
+fillStyle:nth-child(3).shape {
   datum: lin(5400000, clrTransform(phClr, tint(96000), lum(#mod 100000)), clrTransform(phClr, shade(94000), lum(#mod 94000)) 78000);
 }
 
-fillStyle:intense.background {
+fillStyle:nth-child(3).background {
   datum: path(circle in 50000 100000 100000 50000, clrTransform(phClr, tint(90000), lum(#mod 110000)), clrTransform(phClr, shade(94000), lum(#mod 96000)) 100000);
 }
 
@@ -139,22 +139,22 @@ lineStyle {
   tail: none;     /* corresponds to `tailEnd` */
 }
 
-lineStyle:subtle {
+lineStyle:first-child {
   width: 12700;
 }
 
-lineStyle:moderate {
+lineStyle:nth-child(2) {
   width: 19050;
 }
 
-lineStyle:intense {
+lineStyle:nth-child(3) {
   width: 25400;
 }
 
 /**
  * fontScheme
  *
- * There are two groups of font scheme and are assigned to id `#head`(a.k.a majorFont) and `#body`(a.k.a minorFont), respectively.
+ * There are two groups of font scheme and are selected by classes `.head`(a.k.a majorFont) and `.body`(a.k.a minorFont), respectively.
  * For each group of font scheme, there should be upto 3 general categories of typefaces,
  *   plus detialed preferences for specific natural languages.
  */
@@ -205,7 +205,7 @@ fontScheme {
   Tfng: "Ebrima";
 }
 
-fontScheme#head {
+fontScheme.head {
   latin: panose("Calibri Light" var(--panose));
 
   Jpan: "游ゴシック Light";
@@ -218,7 +218,7 @@ fontScheme#head {
   Viet: "Times New Roman";
 }
 
-fontScheme#body {
+fontScheme.body {
   latin: panose("Calibri" var(--panose));
 
   Jpan: "游明朝";
