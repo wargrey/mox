@@ -48,6 +48,7 @@
 (define-enumeration mox-preset-dash-name : MOX-Prefab-Dash-Name [solid dash dot dashDot lgDash lgDashDot lgDashDotDot sysDash sysDashDot sysDashDotDot sysDot])
 (define-enumeration mox-line-end-size-option : MOX-Line-End-Size-Option [lg med sm]) ; for both length and width
 (define-enumeration mox-line-end-type : MOX-Line-End-Type [none arrow diamond oval stealth triangle])
+(define-enumeration mox-effect-type : MOX-Effect-Type [effectDag effectLst scene3d sp3d])
 
 (define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
 
@@ -98,8 +99,8 @@
   ;;    eg: sysClr(val, lastClr) or sysClr(val lastClr)
   [(sysclr sysClr systemclr systemClr) #:=> [(cons [val ? string?] [lastClr ? index?])]
    (CSS<&> ((inst CSS:<^> Any) <mox-system-color-keyword>)
-           (css-omissible-comma-parser (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha)
-                                                         hexa-digits))))])
+           (css-omissible-comma-parser
+            (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha) hexa-digits))))])
 
 (define-css-function-filter <mox-color-transformation> #:-> MOX-Color-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
@@ -192,7 +193,8 @@
 
 (define (<:mox-line-dash:>) : (CSS-Parser (Listof MOX-Line-Dash-Datum))
   (CSS<+> (CSS:<^> (<css-keyword> mox-preset-dash-names))
-          (CSS<~> (CSS<#> (CSS<~> (CSS:<*> (<mox+percentage> mox+1000ths-percentage) '2) mox-line-dash-stop) '+) mox-line-dasharray)))
+          (CSS<~> (CSS<#> (CSS<~> (CSS:<*> (<mox+percentage> mox+1000ths-percentage) '2) mox-line-dash-stop) '+)
+                  mox-line-dasharray)))
 
 (define (<:mox-line-end-shape:>) : (CSS-Parser (Listof Symbol))
   (CSS<++> (CSS:<^> (<css-keyword> mox-line-end-types))
@@ -226,11 +228,12 @@
   (lambda [v]
     (css-length->scalar (real->double-flonum (/ v 12700)) 'pt)))
 
-(define mox-line-dash-stop : (-> (Listof CSS+%) (CSS-Option (Pairof Nonnegative-Flonum Nonnegative-Flonum)))
+(define mox-line-dash-stop : (-> (Listof CSS+%) (Pairof Nonnegative-Flonum Nonnegative-Flonum))
   (lambda [da]
-    (and (pair? da) (pair? (cdr da))
-         (cons (css+%-value (car da))
-               (css+%-value (cadr da))))))
+    (cond [(and (pair? da) (pair? (cdr da)))
+           (cons (css+%-value (car da))
+                 (css+%-value (cadr da)))]
+          [else '#:deadcode (cons +nan.0 +nan.0)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-raw-color-datum? : (-> Any Boolean : MOX-Raw-Color-Datum)
