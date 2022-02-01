@@ -64,7 +64,7 @@
                 [else #false]))
 
             (λ [] : MOX-Word
-              (mox-word (or (main-realize) docx-blank) (glos-realize)
+              (mox-word (or (main-realize) empty-document) (glos-realize)
                         (unbox &header) (unbox &footer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -113,7 +113,7 @@
                                     (unbox &comments) (unbox &footnotes) (unbox &endnotes))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define docx-blank : Word-Document
+(define empty-document : Word-Document
   (word-document (xml-blank docx-name)
                  #false #false
                  #false #false #false

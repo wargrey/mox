@@ -3,7 +3,6 @@
 (provide (all-defined-out))
 
 (require racket/port)
-(require racket/symbol)
 
 (require digimon/archive)
 (require sgml/digitama/plain/sax)
@@ -135,9 +134,9 @@
                      [(Override)
                       (let ([ct (assq 'ContentType attrs)]
                             [pn (assq 'PartName attrs)])
-                        (when (and ct pn) ; ZIP does not store items with leading '/'
+                        (when (and ct pn)
                           (hash-set! parts
-                                     (substring (assert (cdr pn) string?) 1)
+                                     (substring (assert (cdr pn) string?) 1)  ; ZIP does not store items with leading '/'
                                      (string->symbol (assert (cdr ct) string?)))))]
                      [(Types)
                       (let ([?xmlns (assq 'xmlns attrs)])

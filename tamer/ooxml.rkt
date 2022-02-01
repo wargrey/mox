@@ -49,4 +49,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (pretty-print-columns 160)
-[global-port-print-handler pretty-print]
+(global-port-print-handler pretty-print)
