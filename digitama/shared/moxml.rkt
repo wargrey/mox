@@ -23,7 +23,7 @@
     
     (values 'sharedml
 
-            (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
+            (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               (case type
                 [(application/vnd.openxmlformats-package.core-properties+xml application/vnd.openxmlformats-officedocument.extended-properties+xml)
                  (load-xml-datum /dev/pkgin (make-file-properties-sax-handler file-properties))]

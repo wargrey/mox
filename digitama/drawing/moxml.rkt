@@ -19,7 +19,7 @@
     
     (values 'drawingml
 
-            (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
+            (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               (case type
                 [(application/vnd.openxmlformats-officedocument.theme+xml)
                  (set-box! &theme (xml-document-normalize (read-xml-document /dev/pkgin)))]

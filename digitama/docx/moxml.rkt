@@ -40,7 +40,7 @@
     
     (values docx-name
 
-            (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
+            (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               (case type
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml)
                  (main-unzip entry type /dev/pkgin)]
@@ -81,7 +81,7 @@
     (define &footnotes : (Boxof (Option XML-Document)) (box #false))
     (define &endnotes : (Boxof (Option XML-Document)) (box #false))
     
-    (values (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
+    (values (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               (case type
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                   application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml)
@@ -119,7 +119,7 @@
                  #false #false #false
                  #false #false #false))
 
-(define docx-glossary? : (-> Bytes Boolean)
+(define docx-glossary? : (-> String Boolean)
   (let ([px.glossary #px"/glossary/"])
     (lambda [entry]
       (regexp-match? px.glossary entry))))
