@@ -9,7 +9,7 @@
 (require digimon/digitama/exec)
 (require digimon/digitama/latex)
 
-(require digimon/digivice/wisemon/parameter)
+(require (except-in digimon/digivice/wisemon/parameter the-name))
 (require digimon/digivice/wisemon/native)
 (require digimon/digivice/wisemon/racket)
 (require digimon/digivice/wisemon/spec)
@@ -17,12 +17,13 @@
 (require digimon/digivice/wisemon/phony/typeset)
 
 (require "../format.rkt")
+(require "../parameter.rkt")
 (require "../../../digitama/scribble/docx/metainfo.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define make-docx-specs : (-> Info-Ref Wisemon-Specification)
   (lambda [info-ref]
-    (for/list : Wisemon-Specification ([typesetting (in-list (find-digimon-typesettings info-ref #true))])
+    (for/list : Wisemon-Specification ([typesetting (in-list (find-digimon-typesettings info-ref #:silent? #true))])
       (define-values (docx.scrbl maybe-name regexps) (values (car typesetting) (caddr typesetting) (cadddr typesetting)))
       (define mox.docx : Path (assert (tex-document-destination docx.scrbl #true #:extension docx-suffix)))
       
@@ -40,7 +41,7 @@
                       (eval `(define (docx:render docx.scrbl #:dest-dir dest-dir)
                                (render #:dest-dir dest-dir #:render-mixin docx:render-mixin
                                        (list (dynamic-require docx.scrbl 'doc)) (list ,mox.docx))))
-                      (fg-recon-eval 'docx `(docx:render ,docx.scrbl #:dest-dir ,(path-only mox.docx))))))))
+                      (fg-recon-eval docx-render-mode `(docx:render ,docx.scrbl #:dest-dir ,(path-only mox.docx))))))))
 
 (define make~docx : MOX-Render
   (lambda [digimon info-ref]

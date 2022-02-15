@@ -68,8 +68,7 @@
             [settings-part (mox-story-part doc-id 'settings.xml)]
             [websettings-part (mox-story-part doc-id 'webSettings.xml)]
             [docProps (opc-word-properties-markup-entries "/~a" plain-title (reverse (unbox &authors)) doc-version doc-date clean-properties)])
-        (zip-create #:strategy 'fixed
-                    (current-output-port)
+        (zip-create (current-output-port)
                     (list (opc-content-types-markup-entry
                            (append (list main-part style-part font-part theme-part footnote-part endnote-part settings-part websettings-part)
                                    (for/list ([type.entry (in-list docProps)])
