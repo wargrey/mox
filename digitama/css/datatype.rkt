@@ -6,9 +6,11 @@
 (require css/digitama/color)
 (require css/digitama/image)
 (require css/digitama/syntax/misc)
+(require css/digitama/syntax/dimension)
 
 (require digimon/enumeration)
 (require digimon/predicate)
+(require digimon/dimension)
 
 (require racket/keyword)
 (require racket/symbol)
@@ -226,7 +228,7 @@
 
 (define mox-line-width : (-> Natural Nonnegative-Flonum)
   (lambda [v]
-    (css-length->scalar (real->double-flonum (/ v 12700)) 'pt)))
+    (dim:length (real->double-flonum (/ v 12700)) 'pt css-dimenv)))
 
 (define mox-line-dash-stop : (-> (Listof CSS+%) (Pairof Nonnegative-Flonum Nonnegative-Flonum))
   (lambda [da]

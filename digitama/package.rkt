@@ -168,7 +168,7 @@
   ; For file readers, if an element matches both Default and Override, Override takes precedence. 
   (lambda [&xmlns extensions parts]
     ((inst make-xml-event-handler Void)
-     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
                  (when (pair? attrs)
                    (case element
                      [(Default)
@@ -192,7 +192,7 @@
 (define make-relationships-sax-handler : (-> (Boxof String) (HashTable Symbol MOX-Relationship) XML-Event-Handler)
   (lambda [&xmlns rels]
     ((inst make-xml-event-handler Void)
-     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
                  (when (pair? attrs)
                    (case element
                      [(Relationship)
