@@ -145,8 +145,8 @@
                    #:width (css-ref declared-values inherited-values 'width nonnegative-flonum? (#%mox-line-width))
                    #:join (css-ref declared-values inherited-values 'join mox-line-join-datum? (#%mox-line-join))
                    #:dash (css-ref declared-values inherited-values 'dash (make-css->unboxed-datum mox-line-dash-datum? (#%mox-line-dash)))
-                   #:head (css-ref declared-values inherited-values 'head symbol-list*? (#%mox-line-head))
-                   #:tail (css-ref declared-values inherited-values 'tail symbol-list*? (#%mox-line-tail)))))
+                   #:head (css-ref declared-values inherited-values 'head symbol-list+? (#%mox-line-head))
+                   #:tail (css-ref declared-values inherited-values 'tail symbol-list+? (#%mox-line-tail)))))
 
 (define mox-fontscheme-filter : (CSS-Cascaded-Value-Filter MOX-Font-Scheme)
   (lambda [declared-values inherited-values]

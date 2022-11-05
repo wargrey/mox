@@ -7,6 +7,10 @@
 (require "digitama/docx/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define read-docx-package-for-template : (-> MOX-StdIn MOX-Package-Template)
+  (lambda [/dev/stdin]
+    (mox-input-package-for-template /dev/stdin moxml-word-agent)))
+
 (define read-docx-package : (-> MOX-StdIn MOX-Package)
   (lambda [/dev/stdin]
     (mox-input-package /dev/stdin moxml-word-agent)))

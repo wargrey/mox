@@ -3,8 +3,8 @@
 (provide (all-defined-out))
 
 (require racket/port)
-(require racket/symbol)
 
+(require digimon/archive)
 (require sgml/digitama/plain/sax)
 
 (require typed/racket/unsafe)
@@ -12,14 +12,6 @@
 (unsafe-require/typed
  racket/base
  [procedure-rename (All (f) (-> f Symbol f))])
-
-(unsafe-require/typed
- file/unzip
- [unzip (->* ((U Input-Port Path-String))
-             ((->* (Bytes Boolean Input-Port) ((Option Natural)) Any)
-              #:preserve-timestamps? Boolean
-              #:utc-timestamps? Boolean)
-             Void)])
 
 (require "moxml.rkt")
 (require "shared/moxml.rkt")
@@ -32,13 +24,13 @@
 (struct mox-content-types
   ([xmlns : String]
    [extensions : (HashTable PRegexp Symbol)]
-   [parts : (HashTable Bytes Symbol)])
+   [parts : (HashTable String Symbol)])
   #:type-name MOX-Content-Types
   #:transparent)
 
 (struct mox-relationship
   ([id : Symbol]
-   [target : Bytes]
+   [target : String]
    [type : Symbol]
    [external? : Boolean])
   #:type-name MOX-Relationship
@@ -53,7 +45,7 @@
 (struct mox.zip
   ([types : MOX-Content-Types]
    [rels : MOX-Relationships]
-   [part-rels : (HashTable Bytes MOX-Relationships)])
+   [part-rels : (HashTable String MOX-Relationships)])
   #:type-name MOX.ZIP)
 
 (struct mox.ml mox.zip
@@ -64,59 +56,100 @@
   #:transparent)
 
 (struct mox-package mox.ml
-  ([orphans : (HashTable Bytes (Pairof Symbol (-> Input-Port)))])
+  ([orphans : (HashTable String (Pairof Symbol (-> Input-Port)))])
   #:type-name MOX-Package)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package)
-  (lambda [/dev/stdin mox-agent]
-    (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent))
-    (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent))
-    (define-values (ooxml mox-unzip mox-realize) (mox-agent))
+(struct mox-package-template
+  ()
+  #:type-name MOX-Package-Template)
 
-    (define orphans : (HashTable Bytes (Pairof Symbol (-> Input-Port))) (make-hash))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define #:forall (x) mox-input-package-for-template : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package-Template)
+  (lambda [/dev/stdin mox-agent]
+    (define-values (ooxml mox-unzip mox-realize) (mox-agent))
     
     (define &types-xmlns : (Boxof String) (box ""))
     (define extensions : (HashTable PRegexp Symbol) (make-hash))
-    (define parts : (HashTable Bytes Symbol) (make-hash))
+    (define parts : (HashTable String Symbol) (make-hash))
 
     (define &rels-xmlns : (Boxof String) (box ""))
     (define relationships : (HashTable Symbol MOX-Relationship) (make-hasheq))
-    (define part-relationships : (HashTable Bytes MOX-Relationships) (make-hash))
+    (define part-relationships : (HashTable String MOX-Relationships) (make-hash))
 
     (define /dev/zipin : Input-Port
       (cond [(input-port? /dev/stdin) /dev/stdin]
             [(bytes? /dev/stdin) (open-input-file (bytes->path /dev/stdin))]
             [else (open-input-file /dev/stdin)]))
 
-    (unzip /dev/zipin
-           (λ [[entry : Bytes] [dir? : Boolean] [/dev/pkgin : Input-Port] [timestamp : (Option Natural) #false]] : Any
-             ;;; There is no folder in Office Open XML Package
-             ;;; The input port must be read here, or `unzip` will keep waiting...
-             (with-handlers ([exn? (λ [[e : exn]] (port->bytes /dev/pkgin))])
-               (define type : Symbol (mox-part-type entry extensions parts))
+    (zip-extract /dev/zipin
+                 ;;; NOTE that MS Office Open XML Package dosen't keep folders in archive.
+                 (λ [[/dev/pkgin : Input-Port] [entry : String] [folder? : Boolean] [timestamp : Natural] [datum : Any]] : Any
+                   (define type : Symbol (mox-part-type entry extensions parts))
+                   
+                   (or (mox-unzip entry type /dev/pkgin)
+                       
+                       (case type
+                         [(application/vnd.openxmlformats-package.types+xml)
+                          (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
+                         [(application/vnd.openxmlformats-package.relationships+xml)
+                          (cond [(string=? entry "_rels/.rels") (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
+                                [else (let ([&xmlns : (Boxof String) (box "")]
+                                            [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
+                                            [pentry : String (regexp-replace* #px"[_.]rels($|[/])" entry "")])
+                                        (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
+                                        (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]))))
 
-               (or (mox-unzip entry type /dev/pkgin)
-                   (drawing-unzip entry type /dev/pkgin)
-                   (shared-unzip entry type /dev/pkgin)
+    (unless (eq? /dev/zipin /dev/stdin)
+      (close-input-port /dev/zipin))
+    
+    (mox-package-template)))
 
-                   (case type
-                     [(application/vnd.openxmlformats-package.types+xml)
-                      (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
-                     [(application/vnd.openxmlformats-package.relationships+xml)
-                      (cond [(bytes=? entry #"_rels/.rels") (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
-                            [else (let ([&xmlns : (Boxof String) (box "")]
-                                        [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
-                                        [pentry : Bytes (regexp-replace* #px"[_.]rels($|[/])" entry #"")])
-                                    (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
-                                    (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
-                     [else (let ([stype (symbol->immutable-string type)])
-                             (hash-set! orphans entry
-                                        (let ([ooxml::// (format "~a:///~a" ooxml entry)]
-                                              [raw (port->bytes /dev/pkgin)])
-                                          (cons type
-                                                (procedure-rename (λ [] (open-input-bytes raw ooxml:://))
-                                                                  (string->symbol ooxml:://))))))])))))
+(define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package)
+  (lambda [/dev/stdin mox-agent]
+    (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent))
+    (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent))
+    (define-values (ooxml mox-unzip mox-realize) (mox-agent))
+
+    (define orphans : (HashTable String (Pairof Symbol (-> Input-Port))) (make-hash))
+    
+    (define &types-xmlns : (Boxof String) (box ""))
+    (define extensions : (HashTable PRegexp Symbol) (make-hash))
+    (define parts : (HashTable String Symbol) (make-hash))
+
+    (define &rels-xmlns : (Boxof String) (box ""))
+    (define relationships : (HashTable Symbol MOX-Relationship) (make-hasheq))
+    (define part-relationships : (HashTable String MOX-Relationships) (make-hash))
+
+    (define /dev/zipin : Input-Port
+      (cond [(input-port? /dev/stdin) /dev/stdin]
+            [(bytes? /dev/stdin) (open-input-file (bytes->path /dev/stdin))]
+            [else (open-input-file /dev/stdin)]))
+
+    (zip-extract /dev/zipin
+                 ;;; NOTE that MS Office Open XML Package dosen't keep folders in archive.
+                 (λ [[/dev/pkgin : Input-Port] [entry : String] [folder? : Boolean] [timestamp : Natural] [datum : Any]] : Any
+                   (define type : Symbol (mox-part-type entry extensions parts))
+                     
+                   (or (mox-unzip entry type /dev/pkgin)
+                       (drawing-unzip entry type /dev/pkgin)
+                       (shared-unzip entry type /dev/pkgin)
+                       
+                       (case type
+                         [(application/vnd.openxmlformats-package.types+xml)
+                          (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
+                         [(application/vnd.openxmlformats-package.relationships+xml)
+                          (cond [(string=? entry "_rels/.rels") (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
+                                [else (let ([&xmlns : (Boxof String) (box "")]
+                                            [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
+                                            [pentry : String (regexp-replace* #px"[_.]rels($|[/])" entry "")])
+                                        (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
+                                        (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
+                         [else ; might use them later
+                          (hash-set! orphans entry
+                                     (let ([ooxml::// (format "~a:///~a" ooxml entry)]
+                                           [immediately-extracted-raw (port->bytes /dev/pkgin)])
+                                       (cons type (procedure-rename (λ [] (open-input-bytes immediately-extracted-raw ooxml:://))
+                                                                    (string->symbol ooxml:://)))))]))))
 
     (unless (eq? /dev/zipin /dev/stdin)
       (close-input-port /dev/zipin))
@@ -130,12 +163,12 @@
                  orphans)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable Bytes Symbol) XML-Event-Handler)
+(define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable String Symbol) XML-Event-Handler)
   ;;; OpenPackagingConventions 9.1.2.2
   ; For file readers, if an element matches both Default and Override, Override takes precedence. 
   (lambda [&xmlns extensions parts]
     ((inst make-xml-event-handler Void)
-     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
                  (when (pair? attrs)
                    (case element
                      [(Default)
@@ -147,9 +180,10 @@
                      [(Override)
                       (let ([ct (assq 'ContentType attrs)]
                             [pn (assq 'PartName attrs)])
-                        (when (and ct pn) ; ZIP does not store items with leading '/'
-                          (let ([name (string->bytes/utf-8 (assert (cdr pn) string?) #false 1)])
-                            (hash-set! parts name (string->symbol (assert (cdr ct) string?))))))]
+                        (when (and ct pn)
+                          (hash-set! parts
+                                     (substring (assert (cdr pn) string?) 1)  ; ZIP does not store items with leading '/'
+                                     (string->symbol (assert (cdr ct) string?)))))]
                      [(Types)
                       (let ([?xmlns (assq 'xmlns attrs)])
                         (when (pair? ?xmlns)
@@ -158,7 +192,7 @@
 (define make-relationships-sax-handler : (-> (Boxof String) (HashTable Symbol MOX-Relationship) XML-Event-Handler)
   (lambda [&xmlns rels]
     ((inst make-xml-event-handler Void)
-     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : Void]] : Void
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
                  (when (pair? attrs)
                    (case element
                      [(Relationship)
@@ -169,7 +203,7 @@
                         (when (and target type Id)
                           (let ([id (string->symbol (assert (cdr Id) string?))])
                             (hash-set! rels id (mox-relationship id
-                                                                 (string->bytes/utf-8 (assert (cdr target) string?))
+                                                                 (assert (cdr target) string?)
                                                                  (string->symbol (assert (cdr type) string?))
                                                                  (and mode (equal? (cdr mode) "External")))))))]
                      [(Relationships)
@@ -178,10 +212,10 @@
                           (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-part-type : (-> Bytes (HashTable PRegexp Symbol) (HashTable Bytes Symbol) Symbol)
+(define mox-part-type : (-> String (HashTable PRegexp Symbol) (HashTable String Symbol) Symbol)
   (lambda [entry extensions parts]
     (hash-ref parts entry
               (λ [] (or (for/or : (Option Symbol) ([(px.ext type) (in-hash extensions)])
                           (and (regexp-match? px.ext entry) type))
-                        (cond [(bytes=? entry #"[Content_Types].xml") 'application/vnd.openxmlformats-package.types+xml]
+                        (cond [(string=? entry "[Content_Types].xml") 'application/vnd.openxmlformats-package.types+xml]
                               [else '||]))))))

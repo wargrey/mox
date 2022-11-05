@@ -27,7 +27,7 @@
 (define media-types : (HashTable Symbol (HashTable Symbol Symbol)) (make-hasheq))
 
 (define iana-mime-display-element : (XML-Element-Handler Void)
-  (lambda [name depth attrs empty? seed]
+  (lambda [name depth attrs empty? preserver? seed]
     (when (eq? name 'registry)
       (if (list? attrs)
           (let ([?id (assq 'id attrs)])
@@ -37,7 +37,7 @@
           (iana-mime-current-category #false)))))
 
 (define ianan-display-pcdata : (XML-PCData-Handler Void)
-  (lambda [element depth pcdata cdata? datum]
+  (lambda [element depth pcdata preserver? cdata? datum]
     (define category (iana-mime-current-category))
     (define name (iana-mime-current-name))
     

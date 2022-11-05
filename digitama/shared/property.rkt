@@ -26,14 +26,15 @@
 (define make-file-properties-sax-handler : (-> MOX-File-Properties XML-Event-Handler)
   (lambda [metainfo]
     ((inst make-xml-event-handler Void)
-     #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [cdata? : Boolean] [_ : Void]] : Void
+     #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [preserve? : Boolean] [cdata? : Boolean] [_ : Void]] : Void
                 (let-values ([(ns name) (xml-qname-split element)])
                   (hash-set! metainfo name pcdata))))))
 
 (define make-custom-properties-sax-handler : (-> (Boxof (Option String)) (HashTable Symbol MOX-Custom-Property) (XML-Event-Handlerof CustomAttributes))
   (lambda [&xmlns properties]
     ((inst make-xml-event-handler CustomAttributes)
-     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [_ : CustomAttributes]] : CustomAttributes
+     #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : CustomAttributes]]
+                 : CustomAttributes
                  (displayln element)
                  (when (pair? attrs)
                    (case element
@@ -52,7 +53,7 @@
                                   (let ([v (cdr attr)])
                                     (cond [(string? v) (values (car attr) v)]
                                           [else (values (car attr) (unbox v))]))))))])))
-     #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [cdata? : Boolean] [name.attrs : CustomAttributes]] : CustomAttributes
+     #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [preserve? : Boolean] [cdata? : Boolean] [name.attrs : CustomAttributes]] : CustomAttributes
                 (displayln name.attrs)
                 (when (pair? name.attrs)
                   (let-values ([(name) (car name.attrs)]

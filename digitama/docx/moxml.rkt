@@ -40,7 +40,7 @@
     
     (values docx-name
 
-            (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
+            (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               (case type
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml)
                  (main-unzip entry type /dev/pkgin)]
@@ -64,7 +64,7 @@
                 [else #false]))
 
             (λ [] : MOX-Word
-              (mox-word (or (main-realize) docx-blank) (glos-realize)
+              (mox-word (or (main-realize) empty-document) (glos-realize)
                         (unbox &header) (unbox &footer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,7 +81,7 @@
     (define &footnotes : (Boxof (Option XML-Document)) (box #false))
     (define &endnotes : (Boxof (Option XML-Document)) (box #false))
     
-    (values (λ [[entry : Bytes] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
+    (values (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
               (case type
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                   application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml)
@@ -113,13 +113,13 @@
                                     (unbox &comments) (unbox &footnotes) (unbox &endnotes))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define docx-blank : Word-Document
+(define empty-document : Word-Document
   (word-document (xml-blank docx-name)
                  #false #false
                  #false #false #false
                  #false #false #false))
 
-(define docx-glossary? : (-> Bytes Boolean)
+(define docx-glossary? : (-> String Boolean)
   (let ([px.glossary #px"/glossary/"])
     (lambda [entry]
       (regexp-match? px.glossary entry))))

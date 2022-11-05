@@ -6,9 +6,11 @@
 (require css/digitama/color)
 (require css/digitama/image)
 (require css/digitama/syntax/misc)
+(require css/digitama/syntax/dimension)
 
 (require digimon/enumeration)
 (require digimon/predicate)
+(require digimon/dimension)
 
 (require racket/keyword)
 (require racket/symbol)
@@ -99,8 +101,8 @@
   ;;    eg: sysClr(val, lastClr) or sysClr(val lastClr)
   [(sysclr sysClr systemclr systemClr) #:=> [(cons [val ? string?] [lastClr ? index?])]
    (CSS<&> ((inst CSS:<^> Any) <mox-system-color-keyword>)
-           (css-omissible-comma-parser (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha)
-                                                         hexa-digits))))])
+           (css-omissible-comma-parser
+            (CSS:<^> (CSS:<~> (<css#color> '#:no-alpha) hexa-digits))))])
 
 (define-css-function-filter <mox-color-transformation> #:-> MOX-Color-Transform
   ;;; Fundamentals and Markup Language References, 20.1.2.3.33
@@ -193,7 +195,8 @@
 
 (define (<:mox-line-dash:>) : (CSS-Parser (Listof MOX-Line-Dash-Datum))
   (CSS<+> (CSS:<^> (<css-keyword> mox-preset-dash-names))
-          (CSS<~> (CSS<#> (CSS<~> (CSS:<*> (<mox+percentage> mox+1000ths-percentage) '2) mox-line-dash-stop) '+) mox-line-dasharray)))
+          (CSS<~> (CSS<#> (CSS<~> (CSS:<*> (<mox+percentage> mox+1000ths-percentage) '2) mox-line-dash-stop) '+)
+                  mox-line-dasharray)))
 
 (define (<:mox-line-end-shape:>) : (CSS-Parser (Listof Symbol))
   (CSS<++> (CSS:<^> (<css-keyword> mox-line-end-types))
@@ -225,13 +228,14 @@
 
 (define mox-line-width : (-> Natural Nonnegative-Flonum)
   (lambda [v]
-    (css-length->scalar (real->double-flonum (/ v 12700)) 'pt)))
+    (dim:length (real->double-flonum (/ v 12700)) 'pt css-dimenv)))
 
-(define mox-line-dash-stop : (-> (Listof CSS+%) (CSS-Option (Pairof Nonnegative-Flonum Nonnegative-Flonum)))
+(define mox-line-dash-stop : (-> (Listof CSS+%) (Pairof Nonnegative-Flonum Nonnegative-Flonum))
   (lambda [da]
-    (and (pair? da) (pair? (cdr da))
-         (cons (css+%-value (car da))
-               (css+%-value (cadr da))))))
+    (cond [(and (pair? da) (pair? (cdr da)))
+           (cons (css+%-value (car da))
+                 (css+%-value (cadr da)))]
+          [else '#:deadcode (cons +nan.0 +nan.0)])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-raw-color-datum? : (-> Any Boolean : MOX-Raw-Color-Datum)
