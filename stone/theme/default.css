@@ -82,9 +82,9 @@ clrScheme {
 /**
  * fillStyleLst and bgFillStyleLst
  *
- * These schemes are associated with the type selector `fillStyle`
- * They both are lists and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected by pseudo-classes.
- * Besides, `bgFillStyleLst` is selected by class `.background`, while `fillStyleLst` itself is selected by `.shape`.
+ * These schemes are associated with the type selector `fillStyle`, where
+ *   `bgFillStyleLst` is selected by class `.background`, while `fillStyleLst` itself is selected by `.shape`
+ * They both are lists and are selected by child indices.
  * As such, a `fillStyle` selector without pseudo-class and/or class can be used to share common properties.
  *
  * The fill style value is associated with the property `datum`, and other properties are used to set other parameters if needed.
@@ -122,10 +122,10 @@ fillStyle:nth-child(3).background {
  * lnStyleLst
  *
  * This scheme is associated with the type selector `lineStyle`
- * It is a list and containing 3 styles, `subtle`, `moderate`, and `intense`, which are selected by pseudo-classes.
- * As such, a `lineStyle` selector without pseudo-class and/or class can be used to share common properties.
+ * It is a list and is selected by child indices.
+ * As such, a `lineStyle` selector without a pseudo-class can be used to share common properties.
  *
- * NOTICE that CSS keywords are not supported for `lineStyle` meanwhile
+ * NOTICE that CSS line style keywords are not supported for `lineStyle` meanwhile
  */
 
 lineStyle {
@@ -150,6 +150,28 @@ lineStyle:nth-child(2) {
 lineStyle:nth-child(3) {
   width: 25400;
 }
+
+/**
+ * effectStyleLst
+ *
+ * This scheme is associated with the type selector `effectStyle`
+ * It is a list and is selected by child indices.
+ * As such, a `effectStyle` selector without a pseudo-class can be used to share common properties.
+ *
+ * The effectStyle is the most complicated element in the OpenXML theme
+ * There must be two properties:
+ *   * type, <css-keyword>, refer to a predefined element for effect styles (effectDag, effectLst, scene3d, or sp3d)
+ *   * id,   <css-hash>,    the id of the element referred by `type`
+ *
+ * That is, `effectStyle { type: effectLst; id: empty }` is actually a pointer pointing to `effectLst#empty`
+ */
+
+effectStyle:first-child {
+  type: effectLst;
+  id: empty;
+}
+
+effectLst#empty {}
 
 /**
  * fontScheme

@@ -172,24 +172,13 @@
     (define-values (clrScheme _clr) (css-cascade theme.css (list ~clrScheme ~root) mox-clrscheme-parsers mox-clrscheme-filter *root))
     (define-values (headFont _maf) (css-cascade theme.css (list ~headFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
     (define-values (bodyFont _mif) (css-cascade theme.css (list ~bodyFont ~root) mox-fontscheme-parsers mox-fontscheme-filter *root))
-    (define shapeFills (css-cascade-styles fill-count theme.css (list (~fillStyle 'shape) ~root) *root mox-fillstyle-parsers mox-fillstyle-filter))
-    (define backgFills (css-cascade-styles bg-fill-count theme.css (list (~fillStyle 'background) ~root) *root mox-fillstyle-parsers mox-fillstyle-filter))
-    (define lines (css-cascade-styles line-count theme.css (list ~lineStyle ~root) *root mox-linestyle-parsers mox-linestyle-filter))
+    (define shapeFills (css-cascade-children theme.css (list (~fillStyle 'shape) ~root) mox-fillstyle-parsers mox-fillstyle-filter *root fill-count))
+    (define backgFills (css-cascade-children theme.css (list (~fillStyle 'background) ~root) mox-fillstyle-parsers mox-fillstyle-filter *root bg-fill-count))
+    (define lines (css-cascade-children theme.css (list ~lineStyle ~root) mox-linestyle-parsers mox-linestyle-filter *root line-count))
 
     (mox-theme "Facet" clrScheme headFont bodyFont shapeFills backgFills lines)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define css-cascade-styles : (All (s) (-> Positive-Index CSS-Stylesheet (Pairof CSS-Subject (Listof CSS-Subject)) CSS-Values
-                                          CSS-Declaration-Parsers (CSS-Cascaded-Value-Filter s)
-                                          (Listof s)))
-  (lambda [total theme.css ~subjects *root parsers filter]
-    (parameterize ([current-css-children-count total])
-      (let cascade-style ([idx : Positive-Integer 1]
-                          [selyts : (Listof s) null])
-        (cond [(> idx total) (reverse selyts)]
-              [else (let-values ([(style _) (parameterize ([current-css-child-index idx]) (css-cascade theme.css ~subjects parsers filter *root))])
-                      (cascade-style (add1 idx) (cons style selyts)))])))))
-
 (define mox-extract-fill : (-> CSS-Values (Option CSS-Values) Symbol MOX-Fill-Datum)
   (lambda [declared-values inherited-values property]
     (define datum : (U MOX-Fill-Datum CSS-Image) (css-ref declared-values inherited-values property css->mox-fillstyle))

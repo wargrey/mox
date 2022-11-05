@@ -48,6 +48,7 @@
 (define-enumeration mox-preset-dash-name : MOX-Prefab-Dash-Name [solid dash dot dashDot lgDash lgDashDot lgDashDotDot sysDash sysDashDot sysDashDotDot sysDot])
 (define-enumeration mox-line-end-size-option : MOX-Line-End-Size-Option [lg med sm]) ; for both length and width
 (define-enumeration mox-line-end-type : MOX-Line-End-Type [none arrow diamond oval stealth triangle])
+(define-enumeration mox-effect-type : MOX-Effect-Type [effectDag effectLst scene3d sp3d])
 
 (define mox-color-transformation-elements : (Listof Symbol) '(complement inverse gamma gray comp inv invgamma inverse-gamma))
 
