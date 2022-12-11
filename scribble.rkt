@@ -3,7 +3,7 @@
 (provide (all-defined-out))
 (provide (all-from-out digimon/tamer))
 
-(require mox/digitama/scribble/package/core)
+(require mox/village/scribble/package/core)
 
 (require digimon/tamer)
 

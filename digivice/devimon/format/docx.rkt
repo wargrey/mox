@@ -18,13 +18,13 @@
 
 (require "../format.rkt")
 (require "../parameter.rkt")
-(require "../../../digitama/scribble/docx/metainfo.rkt")
+(require "../../../village/scribble/docx/metainfo.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define make-docx-specs : (-> Info-Ref Wisemon-Specification)
   (lambda [info-ref]
-    (for/list : Wisemon-Specification ([typesetting (in-list (find-digimon-typesettings info-ref #:silent? #true))])
-      (define-values (docx.scrbl maybe-name regexps) (values (car typesetting) (caddr typesetting) (cadddr typesetting)))
+    (for/list : Wisemon-Specification ([typesetting (in-list (find-digimon-typesettings info-ref))])
+      (define-values (docx.scrbl maybe-name regexps) (values (tex-info-path typesetting) (tex-info-name typesetting) (tex-info-dependencies typesetting)))
       (define mox.docx : Path (assert (tex-document-destination docx.scrbl #true #:extension docx-suffix)))
       
       (wisemon-spec mox.docx #:^ (filter file-exists? (tex-smart-dependencies docx.scrbl)) #:-
@@ -37,7 +37,7 @@
                                    [current-namespace (make-base-namespace)]
                                    [exit-handler (λ _ (error the-name "~a ~a: [fatal] ~a needs a proper `exit-handler`!"
                                                              the-name (current-make-phony-goal) ./docx))])
-                      (eval '(require (prefix-in docx: mox/digitama/scribble/docx) setup/xref scribble/render))
+                      (eval '(require (prefix-in docx: mox/village/scribble/docx) setup/xref scribble/render))
                       (eval `(define (docx:render docx.scrbl #:dest-dir dest-dir)
                                (render #:dest-dir dest-dir #:render-mixin docx:render-mixin
                                        (list (dynamic-require docx.scrbl 'doc)) (list ,mox.docx))))

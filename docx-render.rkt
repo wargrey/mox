@@ -3,4 +3,4 @@
 (provide (all-defined-out))
 (provide render-mixin)
 
-(require "digitama/scribble/docx.rkt")
+(require "village/scribble/docx.rkt")

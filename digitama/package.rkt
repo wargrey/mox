@@ -60,13 +60,15 @@
   #:type-name MOX-Package)
 
 (struct mox-package-template
-  ()
+  ([orphans : (HashTable String (Pairof Symbol Bytes))])
   #:type-name MOX-Package-Template)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #:forall (x) mox-input-package-for-template : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package-Template)
   (lambda [/dev/stdin mox-agent]
     (define-values (ooxml mox-unzip mox-realize) (mox-agent))
+
+    (define orphans : (HashTable String (Pairof Symbol Bytes)) (make-hash))
     
     (define &types-xmlns : (Boxof String) (box ""))
     (define extensions : (HashTable PRegexp Symbol) (make-hash))
@@ -97,12 +99,13 @@
                                             [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
                                             [pentry : String (regexp-replace* #px"[_.]rels($|[/])" entry "")])
                                         (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
-                                        (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]))))
+                                        (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
+                         [else (hash-set! orphans entry (cons type (port->bytes /dev/pkgin)))]))))
 
     (unless (eq? /dev/zipin /dev/stdin)
       (close-input-port /dev/zipin))
     
-    (mox-package-template)))
+    (mox-package-template orphans)))
 
 (define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package)
   (lambda [/dev/stdin mox-agent]
