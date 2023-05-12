@@ -39,9 +39,9 @@
     (define partname : String (opc-relationship-part-name base))
     (define entry-name : String (opc-part-name-normalize/zip base))
     
-    (define relationships.xml : Xexpr
+    (define relationships.xml : XExpr
       (list 'Relationships `([xmlns . ,(assert (opc-xmlns 'Relationships))])
-            (for/list : (Listof Xexpr) ([e (in-list elements)])
+            (for/list : (Listof XExpr) ([e (in-list elements)])
               (opc-relation-element->relationship entry-name e))))
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 8.3.3.1, 2006"
@@ -64,7 +64,7 @@
                         [else (let ([unix-target (string->some-system-path target 'unix)])
                                 (some-system-path->string (find-relative-path dirname unix-target)))]))])))
 
-(define opc-relation-element->relationship : (-> String OPC-Relationship Xexpr)
+(define opc-relation-element->relationship : (-> String OPC-Relationship XExpr)
   (lambda [entry-name elem]
     (define target-entry : String (opc-part-name-normalize/zip (cadr elem)))
     (define external? : Boolean (cadddr elem))

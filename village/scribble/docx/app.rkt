@@ -23,7 +23,7 @@
     (define info : Pkg-Info (assert (single-collection-info (quote-source-file))))
     (define info-ref : Info-Ref (pkg-info-ref info))
     
-    (define wordProperty.xml : Xexpr
+    (define wordProperty.xml : XExpr
       (list 'Properties `([xmlns . ,(assert (opc-xmlns 'App))]
                           [xmlns:vt . ,(assert (opc-xmlns 'App:VT))])
             (mox-shared-application-properties-xexprs metainfo

@@ -39,7 +39,8 @@
                 [else #false]))
 
             (λ [] : MOX-Excel
-              (mox-excel (or (workbook-realize) empty-workbook) (xml-blank xlsx-name)
+              (mox-excel (or (workbook-realize) empty-workbook)
+                         (xml-blank xlsx-name)
                          #false null #false #false)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -79,7 +79,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-word-document-markup-entry : (->* (String (Listof Word-Block)) (#:utc Integer) Archive-Entry)
   (lambda [part-name docblocks #:utc [ts #false]]
-    (define story : Xexpr
+    (define story : XExpr
       (list 'w:document
 
             (append `([xmlns:w . ,(assert (opc-xmlns 'Docx:W))]
@@ -110,17 +110,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Blocks
-(define word-blocks->xexprs : (-> (Listof Word-Block) (Listof Xexpr))
+(define word-blocks->xexprs : (-> (Listof Word-Block) (Listof XExpr))
   (lambda [blocks]
     (apply append (map word-block->xexpr blocks))))
 
-(define word-block->xexpr : (->* (Word-Block) (Natural) (Listof Xexpr))
+(define word-block->xexpr : (->* (Word-Block) (Natural) (Listof XExpr))
   (lambda [db [indent 0]]
     (cond [(word-section? db) (list (word-section->xexpr db))]
           [(word-paragraph? db) (list (word-paragraph->xexpr (word-paragraph-content db) (word-style-name db) (word-style-properties db)))]
           [(word-list? db)
            (apply append
-                  (for/list : (Listof (Listof Xexpr)) ([item (in-list (word-list-items db))])
+                  (for/list : (Listof (Listof XExpr)) ([item (in-list (word-list-items db))])
                     (cond [(word-paragraph? item)
                            (list (word-paragraph->xexpr (word-paragraph-content item) "ListParagraph" (word-style-properties item)
                                                         (list (word-list-paragraph-style-xexpr (word-style-name item) indent))))]
@@ -128,14 +128,14 @@
                           [else (word-block->xexpr item indent)])))]
           [(word-nested-flow? db)
            (apply append
-                  (for/list : (Listof (Listof Xexpr)) ([block (in-list (word-nested-flow-blocks db))])
+                  (for/list : (Listof (Listof XExpr)) ([block (in-list (word-nested-flow-blocks db))])
                     (cond [(word-paragraph? block)
                            (list (word-nested-paragraph->xexpr (word-paragraph-content block) (word-style-name db) (word-style-properties db)))]
                           [(word-nested-flow? block) (word-block->xexpr block (+ indent 1))]
                           [else (word-block->xexpr block indent)])))]
           [else (list (list 'w:p null (list (word-run/unrecognized db))))])))
 
-(define word-section->xexpr : (-> Word-Section Xexpr)
+(define word-section->xexpr : (-> Word-Section XExpr)
   (lambda [s]
     (define sname (word-style-name s))
     (define depth (word-section-depth s))
@@ -151,7 +151,7 @@
                                  [else (list* (car numseqs) ". " content)])
                            p:style (word-style-properties s))))
 
-(define word-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties (Listof Xexpr)) Xexpr)
+(define word-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties (Listof XExpr)) XExpr)
   (lambda [pc [style #false] [properties null] [additions null]]
     (define p:style
       (cond [(string? style) style]
@@ -161,24 +161,24 @@
           (cons (word-paragraph-style-xexpr p:style)
                 (append additions (word-content->runs pc))))))
 
-(define word-nested-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties Natural) Xexpr)
+(define word-nested-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties Natural) XExpr)
   (lambda [pc [style #false] [properties null] [indent 0]]
     (list 'w:p null
           (cons (word-nested-paragraph-style-xexpr style indent)
                 (word-content->runs pc)))))
 
-(define word-paragraph-style-xexpr : (-> String Xexpr)
+(define word-paragraph-style-xexpr : (-> String XExpr)
   (lambda [style]
     `(w:pPr () ((w:pStyle ([w:val . ,style]))))))
 
-(define word-list-paragraph-style-xexpr : (-> Style-Name Natural Xexpr)
+(define word-list-paragraph-style-xexpr : (-> Style-Name Natural XExpr)
   (lambda [style indent]
     `(w:numPr () ((w:ilvl  ([w:val . ,(number->string indent)]) ())
                   (w:numId ([w:val . ,(if (eq? style 'ordered) "1" "3")]) ())))))
 
-(define word-nested-paragraph-style-xexpr : (-> Style-Name Natural Xexpr)
+(define word-nested-paragraph-style-xexpr : (-> Style-Name Natural XExpr)
   (lambda [style indent]
-    (define w:border : (Listof Xexpr)
+    (define w:border : (Listof XExpr)
       (list (list 'w:pBdr null
                               '((w:top ([w:val . "single"]
                                         [w:sz . "12"]
@@ -201,7 +201,7 @@
                                             [w:space . "4"]
                                             [w:color . "4D5D2C"]))))))
 
-    (define w:position : (Listof Xexpr)
+    (define w:position : (Listof XExpr)
       (case style
         [(inset code-inset)
          (list (list 'w:ind `([w:left . ,(number->string (* (add1 indent) 360))]
@@ -214,7 +214,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Run and Run Content
-(define word-run->xexpr : (-> (U Word-Run String) (Listof Xexpr))
+(define word-run->xexpr : (-> (U Word-Run String) (Listof XExpr))
   (lambda [r]
     (cond [(string? r)
            (list (word-contents->run r))]
@@ -225,7 +225,7 @@
           [(word-hyperlink? r) (word-hyperlink->field r)]
           [else (list (word-run/unrecognized r))])))
 
-(define word-annotation->xexpr : (-> Word-Annotation (Listof Xexpr))
+(define word-annotation->xexpr : (-> Word-Annotation (Listof XExpr))
   (lambda [a]
     (cond [(word-bookmark? a)
            (word-cross-structure-annotation (word-bookmark-id a) (cdr (word-bookmark-tag a))
@@ -233,7 +233,7 @@
                                             (word-bookmark-content a))]
           [else (list (word-run/unrecognized a))])))
 
-(define word-run-style-xexpr : (-> Style-Name Style-Properties (Option Xexpr))
+(define word-run-style-xexpr : (-> Style-Name Style-Properties (Option XExpr))
   (lambda [style properties]
     (cond [(string? style)
            `(w:rPr () ((w:rStyle ([w:val . ,style]))))]
@@ -245,7 +245,7 @@
                   [(superscript) `(w:rPr () ((w:vertAlign ([w:val . "superscript"]))))]
                   [else #false])])))
 
-(define word-hyperlink->field : (-> Word-Hyperlink (Listof Xexpr))
+(define word-hyperlink->field : (-> Word-Hyperlink (Listof XExpr))
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
     (define anchor (cdr tag))
@@ -253,7 +253,7 @@
     (word-complex-field (string-append "REF " anchor " \\h")
                         (word-hyperlink-content hl))))
 
-(define word-hyperlink->run : (-> Word-Hyperlink Xexpr)
+(define word-hyperlink->run : (-> Word-Hyperlink XExpr)
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
     (define anchor (cdr tag))
@@ -265,15 +265,15 @@
           (list (list 'w:r null
                       (word-content->runs (word-hyperlink-content hl)))))))
 
-(define word-content->runs : (-> (U Word-Run-Content (Listof Word-Run-Content)) (Listof Xexpr))
+(define word-content->runs : (-> (U Word-Run-Content (Listof Word-Run-Content)) (Listof XExpr))
   (lambda [cs]
     (apply append
-           (for/list : (Listof (Listof Xexpr)) ([c (if (list? cs) (in-list cs) (in-value cs))])
+           (for/list : (Listof (Listof XExpr)) ([c (if (list? cs) (in-list cs) (in-value cs))])
              (if (Word-Annotation? c)
                  (word-annotation->xexpr c)
                  (word-run->xexpr c))))))
 
-(define word-contents->run : (->* ((U Word-Run-Content (Listof Word-Run-Content))) (Style-Name Style-Properties #:w:tag Symbol) Xexpr)
+(define word-contents->run : (->* ((U Word-Run-Content (Listof Word-Run-Content))) (Style-Name Style-Properties #:w:tag Symbol) XExpr)
   (lambda [t [style #false] [properties null] #:w:tag [w:t 'w:t]]
     
     (list 'w:r null
@@ -281,7 +281,7 @@
                  (let ([pstyle (word-run-style-xexpr style properties)])
                    (cond [(not pstyle) null]
                          [else (list pstyle)]))
-                 (for/list : (Listof (Listof Xexpr)) ([rc (if (list? t) (in-list t) (in-value t))])
+                 (for/list : (Listof (Listof XExpr)) ([rc (if (list? t) (in-list t) (in-value t))])
                    (cond [(Word-Annotation? rc) (word-annotation->xexpr rc)]
                          [(Word-Run? rc) (word-run->xexpr rc)]
                          [(eq? style 'hspace) (list (word-text (~space (string-length rc)) #:w:tag w:t))]
@@ -290,16 +290,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fields. Fundamentals and Markup Language Reference 17.16.2
-(define word-simple-field : (-> String (U Word-Run-Content (Listof Word-Run-Content)) Xexpr)
+(define word-simple-field : (-> String (U Word-Run-Content (Listof Word-Run-Content)) XExpr)
   (lambda [instr fldvalues]
     (list 'w:fldSimple `([w:instr . ,instr])
           (word-content->runs fldvalues))))
 
 ; TODO: fields can be nested
-(define word-complex-field : (-> (U String (Listof String)) (U Word-Run-Content (Listof Word-Run-Content)) (Listof Xexpr))
+(define word-complex-field : (-> (U String (Listof String)) (U Word-Run-Content (Listof Word-Run-Content)) (Listof XExpr))
   (lambda [instrs fldvalues]
     (append (list '(w:r () ((w:fldChar ([w:fldCharType . "begin"])))))
-            (for/list : (Listof Xexpr) ([instr (if (list? instrs) (in-list instrs) (in-value instrs))])
+            (for/list : (Listof XExpr) ([instr (if (list? instrs) (in-list instrs) (in-value instrs))])
               (word-contents->run instr #:w:tag 'w:instrText))
             (list '(w:r () ((w:fldChar ([w:fldCharType . "separate"])))))
             (word-content->runs fldvalues)
@@ -307,7 +307,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Annotations. Primer 2.14
-(define word-cross-structure-annotation : (-> Integer String Symbol Symbol (Listof Word-Run-Content) (Listof Xexpr))
+(define word-cross-structure-annotation : (-> Integer String Symbol Symbol (Listof Word-Run-Content) (Listof XExpr))
   (lambda [id name tag-start tag-end cs]
     (define id-v (number->string id))
     
@@ -316,15 +316,15 @@
             (list `(,tag-end ([w:id . ,id-v]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define word-br : Xexpr `(w:br))
+(define word-br : XExpr `(w:br))
 
-(define word-text : (-> String [#:w:tag Symbol] Xexpr)
+(define word-text : (-> String [#:w:tag Symbol] XExpr)
   (lambda [t #:w:tag [w:t 'w:t]]
     (cond [(string=? t "") `(,w:t () (,t))]
           [(char-blank? (string-ref t 0)) `(,w:t ([xml:space "preserve"]) (,t))]
           [(char-blank? (string-ref t (sub1 (string-length t)))) `(,w:t ([xml:space "preserve"]) (,t))]
           [else `(,w:t () (,t))])))
 
-(define word-run/unrecognized : (-> Any Xexpr)
+(define word-run/unrecognized : (-> Any XExpr)
   (lambda [v]
     (word-contents->run (format "~s" v))))

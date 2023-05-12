@@ -1,12 +1,12 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide MOX-StdIn MOX-Package)
+(provide MOX-Stdin MOX-Package)
 
 (require "digitama/package.rkt")
 (require "digitama/xlsx/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define read-xlsx-package : (-> MOX-StdIn MOX-Package)
+(define read-xlsx-package : (-> MOX-Stdin MOX-Package)
   (lambda [/dev/stdin]
     (mox-input-package /dev/stdin moxml-excel-agent)))

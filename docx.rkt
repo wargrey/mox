@@ -1,16 +1,16 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide MOX-StdIn MOX-Package)
+(provide MOX-Stdin MOX-Package)
 
 (require "digitama/package.rkt")
 (require "digitama/docx/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define read-docx-package-for-template : (-> MOX-StdIn MOX-Package-Template)
+(define read-docx-package-for-template : (-> MOX-Stdin MOX-Package-Template)
   (lambda [/dev/stdin]
     (mox-input-package-for-template /dev/stdin moxml-word-agent)))
 
-(define read-docx-package : (-> MOX-StdIn MOX-Package)
+(define read-docx-package : (-> MOX-Stdin MOX-Package)
   (lambda [/dev/stdin]
     (mox-input-package /dev/stdin moxml-word-agent)))

@@ -7,7 +7,7 @@
 (require "standards.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-drawing-xmlns : (-> Xexpr-AttList)
+(define mox-drawing-xmlns : (-> XExpr-AttList)
   (lambda []
     `([xmlns:cx . ,(assert (opc-xmlns 'Draw:CX))]
       [xmlns:cx1 . ,(assert (opc-xmlns 'Draw:CX1))]
@@ -26,7 +26,7 @@
       [xmlns:m . ,(assert (opc-xmlns 'Draw:M))]
       [xmlns:v . ,(assert (opc-xmlns 'Draw:V))])))
 
-(define mox-compatibility-xmlns : (-> Xexpr-AttList)
+(define mox-compatibility-xmlns : (-> XExpr-AttList)
   (lambda []
     `([xmlns:mc . ,(assert (opc-xmlns 'Compatibility))]
       [mc:Ignorable . "w14 w15 w16se w16cid w16 w16cex w16sdtdh wp14"])))

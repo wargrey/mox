@@ -160,7 +160,7 @@
                                                   (values (string->symbol (string-titlecase (symbol->immutable-string s)))
                                                           (css-ref declared-values inherited-values s mox-font-datum? "")))]))))
 
-(define read-mox-theme-from-css : (->* (CSS-StdIn)
+(define read-mox-theme-from-css : (->* (CSS-Stdin)
                                        (Symbol #:fill-count Positive-Index #:bg-fill-count Positive-Index #:line-count Positive-Index)
                                        MOX-Theme)
   (lambda [/dev/cssin [root-type 'base] #:fill-count [fill-count 3] #:bg-fill-count [bg-fill-count 3] #:line-count [line-count 3]]

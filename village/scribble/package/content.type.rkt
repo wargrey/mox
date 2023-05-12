@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-content-types-markup-entry : (->* () ((Listof (Pairof String Symbol)) (Listof Symbol) #:utc Integer) Archive-Entry)
   (lambda [[overrides null] [defaults null] #:utc [ts #false]]
-    (define content-type.xml : Xexpr
+    (define content-type.xml : XExpr
       (list 'Types `([xmlns . ,(assert (opc-xmlns 'Types))])
             (append (filter-map opc-type->default (remove-duplicates (list* 'xml 'rels defaults)))
                     (filter-map opc-type->override ((inst remove-duplicates (Pairof String Symbol) String) overrides string=? #:key car)))))
@@ -25,7 +25,7 @@
                               (opc-part-name-normalize/zip "/[Content_Types].xml"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define opc-type->default : (-> Symbol (Option Xexpr))
+(define opc-type->default : (-> Symbol (Option XExpr))
   (lambda [ext]
     (define content-type : (Option Symbol) (opc-type-name ext))
 
@@ -33,7 +33,7 @@
          `(Default ([Extension . ,(symbol->immutable-string ext)]
                     [ContentType . ,(symbol->immutable-string content-type)])))))
 
-(define opc-type->override : (-> (Pairof String Symbol) (Option Xexpr))
+(define opc-type->override : (-> (Pairof String Symbol) (Option XExpr))
   (lambda [t]
     (define content-type : (Option Symbol) (opc-override-type-name (cdr t)))
     

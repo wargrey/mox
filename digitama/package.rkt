@@ -18,7 +18,7 @@
 (require "drawing/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type MOX-StdIn (U String Path Bytes))
+(define-type MOX-Stdin (U String Path Bytes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct mox-content-types
@@ -64,7 +64,7 @@
   #:type-name MOX-Package-Template)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define #:forall (x) mox-input-package-for-template : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package-Template)
+(define #:forall (x) mox-input-package-for-template : (-> MOX-Stdin (MOXML-Agentof (∩ MOXML x)) MOX-Package-Template)
   (lambda [/dev/stdin mox-agent]
     (define-values (ooxml mox-unzip mox-realize) (mox-agent))
 
@@ -107,7 +107,7 @@
     
     (mox-package-template orphans)))
 
-(define #:forall (x) mox-input-package : (-> MOX-StdIn (MOXML-Agentof (∩ MOXML x)) MOX-Package)
+(define #:forall (x) mox-input-package : (-> MOX-Stdin (MOXML-Agentof (∩ MOXML x)) MOX-Package)
   (lambda [/dev/stdin mox-agent]
     (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent))
     (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent))
@@ -132,11 +132,11 @@
                  ;;; NOTE that MS Office Open XML Package dosen't keep folders in archive.
                  (λ [[/dev/pkgin : Input-Port] [entry : String] [folder? : Boolean] [timestamp : Natural] [datum : Any]] : Any
                    (define type : Symbol (mox-part-type entry extensions parts))
-                     
+
                    (or (mox-unzip entry type /dev/pkgin)
                        (drawing-unzip entry type /dev/pkgin)
                        (shared-unzip entry type /dev/pkgin)
-                       
+
                        (case type
                          [(application/vnd.openxmlformats-package.types+xml)
                           (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
