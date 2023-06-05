@@ -22,7 +22,7 @@
    [comments : (Option XML-Document)]
    [handout : (Option XML-Document)]
    [note-master : (Option XML-Document)]
-   [slide-notes : (Listof XML-Document)]
+   [note-slides : (Listof XML-Document)]
    [sync-data : (Listof XML-Document)])
   #:type-name MOX-PowerPoint
   #:transparent)
