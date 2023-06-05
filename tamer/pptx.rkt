@@ -24,4 +24,4 @@
 (mox-package-orphans pptx.zip)
 
 ;(mox-drawingml-theme drawing.ml)
-powerpoint.ml
+; powerpoint.ml
