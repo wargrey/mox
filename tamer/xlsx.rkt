@@ -23,5 +23,4 @@
 (mox-sharedml-properties shared.ml)
 (mox-package-orphans xlsx.zip)
 
-;(mox-drawingml-theme drawing.ml)
 excel.ml
