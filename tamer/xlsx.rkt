@@ -15,7 +15,7 @@
 (define xlsx.zip (time (read-xlsx-package file.xlsx)))
 (define drawing.ml (mox.ml-drawing xlsx.zip))
 (define shared.ml (mox.ml-shared xlsx.zip))
-(define excel.ml (assert (mox.ml-document xlsx.zip) mox-excel?))
+(define excel.ml (mox.ml-document xlsx.zip))
 
 (mox.zip-types xlsx.zip)
 (mox.zip-rels xlsx.zip)
@@ -24,3 +24,4 @@
 (mox-package-orphans xlsx.zip)
 
 ;(mox-drawingml-theme drawing.ml)
+excel.ml

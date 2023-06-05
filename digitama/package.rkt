@@ -48,16 +48,16 @@
    [part-rels : (HashTable String MOX-Relationships)])
   #:type-name MOX.ZIP)
 
-(struct mox.ml mox.zip
+(struct (x) mox.ml mox.zip
   ([drawing : MOX-DrawingML]
    [shared : MOX-SharedML]
-   [document : MOXML])
+   [document : x])
   #:type-name MOX.ML
   #:transparent)
 
-(struct mox-package mox.ml
+(struct (x) mox-package mox.ml
   ([orphans : (HashTable String (Pairof Symbol (-> Input-Port)))])
-  #:type-name MOX-Package)
+  #:type-name MOX-Packageof)
 
 (struct mox-package-template
   ([orphans : (HashTable String (Pairof Symbol Bytes))])
@@ -107,7 +107,7 @@
     
     (mox-package-template orphans)))
 
-(define #:forall (x) mox-input-package : (-> MOX-Stdin (MOXML-Agentof (∩ MOXML x)) MOX-Package)
+(define #:forall (x) mox-input-package : (-> MOX-Stdin (MOXML-Agentof (∩ MOXML x)) (MOX-Packageof x))
   (lambda [/dev/stdin mox-agent]
     (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent))
     (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent))

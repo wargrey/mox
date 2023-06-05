@@ -4,12 +4,12 @@
 (provide MOX-Stdin)
 
 (require "digitama/package.rkt")
-(require "digitama/xlsx/moxml.rkt")
+(require "digitama/pptx/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type MOX-Excel-Package (MOX-Packageof MOX-Excel))
+(define-type MOX-PowerPoint-Package (MOX-Packageof MOX-PowerPoint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define read-xlsx-package : (-> MOX-Stdin MOX-Excel-Package)
+(define read-pptx-package : (-> MOX-Stdin MOX-PowerPoint-Package)
   (lambda [/dev/stdin]
-    (mox-input-package /dev/stdin moxml-excel-agent)))
+    (mox-input-package /dev/stdin moxml-power-point-agent)))

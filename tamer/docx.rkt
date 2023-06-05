@@ -15,7 +15,7 @@
 (define docx.zip (time (read-docx-package file.docx)))
 (define drawing.ml (mox.ml-drawing docx.zip))
 (define shared.ml (mox.ml-shared docx.zip))
-(define word.ml (assert (mox.ml-document docx.zip) mox-word?))
+(define word.ml (mox.ml-document docx.zip))
 (define main.ml (mox-word-main word.ml))
 
 (mox.zip-types docx.zip)

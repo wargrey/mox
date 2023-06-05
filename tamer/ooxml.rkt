@@ -3,10 +3,12 @@
 (provide (all-defined-out))
 (provide (all-from-out "../docx.rkt"))
 (provide (all-from-out "../xlsx.rkt"))
+(provide (all-from-out "../pptx.rkt"))
 (provide (all-from-out racket/logging racket/file racket/path racket/port racket/pretty))
 
 (require "../docx.rkt")
 (require "../xlsx.rkt")
+(require "../pptx.rkt")
 
 (require racket/logging)
 (require racket/file)
@@ -45,6 +47,14 @@
       (cond [(not rmp) (current-directory)]
             [else (let ([full (resolved-module-path-name rmp)])
                     (cond [(path? full) (path-replace-extension full #".xlsx")]
+                          [else (current-directory)]))]))))
+
+(define-syntax (#%pptx stx)
+  (syntax/loc stx
+    (let ([rmp (variable-reference->resolved-module-path (#%variable-reference))])
+      (cond [(not rmp) (current-directory)]
+            [else (let ([full (resolved-module-path-name rmp)])
+                    (cond [(path? full) (path-replace-extension full #".pptx")]
                           [else (current-directory)]))]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
