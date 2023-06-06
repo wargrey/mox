@@ -8,10 +8,17 @@
 
 (require sgml/xml)
 
+(require "moxml.rkt")
 (require "package.rkt")
+
 (require "drawing/moxml.rkt")
 (require "shared/moxml.rkt")
 (require "shared/property.rkt")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define read-moxml-package : (-> MOX-Stdin (MOX-Packageof MOXML))
+  (lambda [/dev/stdin]
+    (mox-input-package /dev/stdin moxml-null-agent)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-pkg-content-types : (-> (MOX-Packageof Any) MOX-Content-Types)

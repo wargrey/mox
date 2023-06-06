@@ -2,7 +2,6 @@
 
 (require "ooxml.rkt")
 
-(require "../digitama/base.rkt")
 (require "../digitama/pptx/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -13,10 +12,4 @@
 (define pptx.zip (time (read-pptx-package file.pptx)))
 (define powerpoint.ml (mox-self pptx.zip))
 
-(mox-pkg-content-types pptx.zip)
-(mox-pkg-relationships pptx.zip)
-(mox-pkg-properties pptx.zip)
-(mox-pkg-orphans pptx.zip)
-
-#;(mox-theme pptx.zip)
 powerpoint.ml

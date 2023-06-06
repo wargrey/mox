@@ -8,3 +8,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct moxml () #:type-name MOXML)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define moxml-null-agent : (MOXML-Agentof MOXML)
+  (lambda []
+    (values 'pkgx moxml-null-unzip moxml)))
+
+(define moxml-null-unzip : MOXML-Unzip
+  (lambda [entry type /dev/pkgin]
+    #false))
