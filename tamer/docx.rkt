@@ -2,10 +2,8 @@
 
 (require "ooxml.rkt")
 
-(require "../digitama/package.rkt")
+(require "../digitama/base.rkt")
 (require "../digitama/docx/moxml.rkt")
-(require "../digitama/shared/moxml.rkt")
-(require "../digitama/drawing/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define file.docx : Path-String
@@ -13,19 +11,16 @@
       (build-path (#%dir) "tamer.docx")))
 
 (define docx.zip (time (read-docx-package file.docx)))
-(define drawing.ml (mox.ml-drawing docx.zip))
-(define shared.ml (mox.ml-shared docx.zip))
-(define word.ml (mox.ml-document docx.zip))
+(define word.ml (mox-document docx.zip))
 (define main.ml (mox-word-main word.ml))
 
-(mox.zip-types docx.zip)
-(mox.zip-rels docx.zip)
-(mox.zip-part-rels docx.zip)
-(mox-sharedml-properties shared.ml)
-(mox-package-orphans docx.zip)
+(mox-pkg-content-types docx.zip)
+(mox-pkg-relationships docx.zip)
+(mox-pkg-properties docx.zip)
+(mox-pkg-orphans docx.zip)
 
 (word-document-styles main.ml)
 (word-document-numbering main.ml)
 (word-document-entry main.ml)
 
-(mox-drawingml-theme drawing.ml)
+(mox-theme docx.zip)

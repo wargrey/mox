@@ -52,7 +52,8 @@
                   application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.template.main+xml)
                  (set-box! &presentation (xml-document-normalize (read-xml-document /dev/pkgin)))]
-                [(application/vnd.openxmlformats-officedocument.presentationml.presentationProperties+xml)
+                [(application/vnd.openxmlformats-officedocument.presentationml.presProps+xml
+                  application/vnd.openxmlformats-officedocument.presentationml.presentationProperties+xml)
                  (set-box! &presentationPr (xml-document-normalize (read-xml-document /dev/pkgin)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slide+xml)
                  (set-box! &slds (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &slds)))]

@@ -1,8 +1,9 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide MOX-Stdin)
+(provide (all-from-out "digitama/base.rkt"))
 
+(require "digitama/base.rkt")
 (require "digitama/package.rkt")
 (require "digitama/docx/moxml.rkt")
 

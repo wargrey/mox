@@ -2,10 +2,8 @@
 
 (require "ooxml.rkt")
 
-(require "../digitama/package.rkt")
+(require "../digitama/base.rkt")
 (require "../digitama/pptx/moxml.rkt")
-(require "../digitama/shared/moxml.rkt")
-(require "../digitama/drawing/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define file.pptx : Path-String
@@ -13,15 +11,12 @@
       (build-path (#%dir) "tamer.pptx")))
 
 (define pptx.zip (time (read-pptx-package file.pptx)))
-(define drawing.ml (mox.ml-drawing pptx.zip))
-(define shared.ml (mox.ml-shared pptx.zip))
-(define powerpoint.ml (mox.ml-document pptx.zip))
+(define powerpoint.ml (mox-self pptx.zip))
 
-(mox.zip-types pptx.zip)
-(mox.zip-rels pptx.zip)
-(mox.zip-part-rels pptx.zip)
-(mox-sharedml-properties shared.ml)
-(mox-package-orphans pptx.zip)
+(mox-pkg-content-types pptx.zip)
+(mox-pkg-relationships pptx.zip)
+(mox-pkg-properties pptx.zip)
+(mox-pkg-orphans pptx.zip)
 
-;(mox-drawingml-theme drawing.ml)
-; powerpoint.ml
+#;(mox-theme pptx.zip)
+powerpoint.ml
