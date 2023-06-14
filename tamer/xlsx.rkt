@@ -13,3 +13,4 @@
 (define excel.ml (mox-self xlsx.zip))
 
 excel.ml
+(mox-pkg-orphans xlsx.zip)

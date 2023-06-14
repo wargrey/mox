@@ -12,7 +12,8 @@
 (struct mox-sharedml moxml
   ([properties : MOX-File-Properties]
    [custom-properties : (Option MOX-Custom-Properties)])
-  #:type-name MOX-SharedML)
+  #:type-name MOX-SharedML
+  #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-sharedml-agent : (MOXML-Agentof MOX-SharedML)

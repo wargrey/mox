@@ -14,6 +14,7 @@
  [procedure-rename (All (f) (-> f Symbol f))])
 
 (require "moxml.rkt")
+(require "mox/datatype.rkt")
 (require "shared/moxml.rkt")
 (require "drawing/moxml.rkt")
 
@@ -178,19 +179,19 @@
                       (let ([ct (assq 'ContentType attrs)]
                             [et (assq 'Extension attrs)])
                         (when (and ct et) ; Extensions in Racket are dot-prefixed
-                          (let ([ext (pregexp (string-append "[.]" (assert (cdr et) string?) "$"))])
-                            (hash-set! extensions ext (string->symbol (assert (cdr ct) string?))))))]
+                          (let ([ext (pregexp (string-append "[.]" (xml:attr-value->string (cdr et)) "$"))])
+                            (hash-set! extensions ext (xml:attr-value->symbol (cdr ct))))))]
                      [(Override)
                       (let ([ct (assq 'ContentType attrs)]
                             [pn (assq 'PartName attrs)])
                         (when (and ct pn)
                           (hash-set! parts
-                                     (substring (assert (cdr pn) string?) 1)  ; ZIP does not store items with leading '/'
-                                     (string->symbol (assert (cdr ct) string?)))))]
+                                     (substring (xml:attr-value->string (cdr pn)) 1)  ; ZIP does not store items with leading '/'
+                                     (xml:attr-value->symbol (cdr ct)))))]
                      [(Types)
                       (let ([?xmlns (assq 'xmlns attrs)])
                         (when (pair? ?xmlns)
-                          (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
+                          (set-box! &xmlns (xml:attr-value->string (cdr ?xmlns)))))]))))))
 
 (define make-relationships-sax-handler : (-> (Boxof String) (HashTable Symbol MOX-Relationship) XML-Event-Handler)
   (lambda [&xmlns rels]
@@ -204,15 +205,15 @@
                             [type (assq 'Type attrs)]
                             [Id (assq 'Id attrs)])
                         (when (and target type Id)
-                          (let ([id (string->symbol (assert (cdr Id) string?))])
+                          (let ([id (mox:attr-value->relationship-id (cdr Id))])
                             (hash-set! rels id (mox-relationship id
-                                                                 (assert (cdr target) string?)
-                                                                 (string->symbol (assert (cdr type) string?))
+                                                                 (xml:attr-value->string (cdr target))
+                                                                 (xml:attr-value->symbol (cdr type))
                                                                  (and mode (equal? (cdr mode) "External")))))))]
                      [(Relationships)
                       (let ([?xmlns (assq 'xmlns attrs)])
                         (when (pair? ?xmlns)
-                          (set-box! &xmlns (assert (cdr ?xmlns) string?))))]))))))
+                          (set-box! &xmlns (xml:attr-value->string (cdr ?xmlns)))))]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-part-type : (-> String (HashTable PRegexp Symbol) (HashTable String Symbol) Symbol)

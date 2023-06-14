@@ -2,7 +2,7 @@
 
 (require "ooxml.rkt")
 
-(require "../digitama/pptx/moxml.rkt")
+(require "../digitama/shared/moxml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define file.mox : Path-String
@@ -16,3 +16,5 @@
 (mox-pkg-relationships mox.zip)
 (mox-pkg-orphans mox.zip)
 (mox-theme mox.zip)
+
+(mox-sharedml-properties (mox-shared.ml mox.zip))

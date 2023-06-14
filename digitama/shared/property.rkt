@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 
 (require sgml/digitama/namespace)
+(require sgml/digitama/plain/datatype)
 (require sgml/digitama/plain/sax)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -35,7 +36,6 @@
     ((inst make-xml-event-handler CustomAttributes)
      #:element (λ [[element : Symbol] [depth : Index] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : CustomAttributes]]
                  : CustomAttributes
-                 (displayln element)
                  (when (pair? attrs)
                    (case element
                      [(Properties)
@@ -43,7 +43,7 @@
                         (define-values (ns name) (xml-qname-split (car attr)))
                         
                         (when (eq? ns 'xmlns)
-                          (set-box! &xmlns (assert (cdr attr) string?))))]
+                          (set-box! &xmlns (xml:attr-value->string (cdr attr)))))]
                      [(Property)
                       (let ([name.value (assq 'name attrs)])
                         (when (pair? name.value)
@@ -54,7 +54,6 @@
                                     (cond [(string? v) (values (car attr) v)]
                                           [else (values (car attr) (unbox v))]))))))])))
      #:pcdata (λ [[element : Symbol] [depth : Index] [pcdata : String] [preserve? : Boolean] [cdata? : Boolean] [name.attrs : CustomAttributes]] : CustomAttributes
-                (displayln name.attrs)
                 (when (pair? name.attrs)
                   (let-values ([(name) (car name.attrs)]
                                [(ns type) (xml-qname-split element)])

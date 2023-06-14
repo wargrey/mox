@@ -12,4 +12,5 @@
 (define pptx.zip (time (read-pptx-package file.pptx)))
 (define powerpoint.ml (mox-self pptx.zip))
 
-powerpoint.ml
+(mox-powerpoint-presentation powerpoint.ml)
+(mox-pkg-orphans pptx.zip)

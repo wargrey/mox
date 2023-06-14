@@ -3,15 +3,18 @@
 (provide (all-defined-out))
 
 (require sgml/xml)
+(require sgml/sax)
 
 (require "../moxml.rkt")
+
+(require "dom/presentation.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define pptx-name : Symbol 'pptx)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct mox-powerpoint moxml
-  ([presentation : XML-Document]
+  ([presentation : PPTX-Presentation]
    [properties : XML-Document]
    [slides : (Listof XML-Document)]
    [slide-layouts : (Listof XML-Document)]
@@ -30,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-power-point-agent : (MOXML-Agentof MOX-PowerPoint)
   (lambda []
-    (define &presentation : (Boxof XML-Document) (box empty-presentation))
+    (define &presentation : (Boxof PPTX-Presentation) (box empty-presentation))
     (define &presentationPr : (Boxof XML-Document) (box empty-presentationPr))
     (define &slds : (Boxof (Listof XML-Document)) (box null))
     (define &sldLayouts : (Boxof (Listof XML-Document)) (box null))
@@ -51,7 +54,7 @@
                 [(application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.template.main+xml)
-                 (set-box! &presentation (xml-document-normalize (read-xml-document /dev/pkgin)))]
+                 (set-box! &presentation (read-xml-datum /dev/pkgin pptx-presentation-sax-handler (unbox &presentation)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.presProps+xml
                   application/vnd.openxmlformats-officedocument.presentationml.presentationProperties+xml)
                  (set-box! &presentationPr (xml-document-normalize (read-xml-document /dev/pkgin)))]
@@ -90,5 +93,4 @@
                               (reverse (unbox &sldMasters)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define empty-presentation : XML-Document (xml-blank 'presentation))
 (define empty-presentationPr : XML-Document (xml-blank 'presentationPr))
