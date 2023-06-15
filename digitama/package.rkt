@@ -14,9 +14,11 @@
  [procedure-rename (All (f) (-> f Symbol f))])
 
 (require "moxml.rkt")
-(require "mox/datatype.rkt")
-(require "shared/moxml.rkt")
 (require "drawing/moxml.rkt")
+(require "shared/moxml.rkt")
+
+(require "shared/ml/common-simple-types.rkt")
+(require "drawing/ml/main.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-Stdin (U String Path Bytes))

@@ -47,7 +47,7 @@
                      [(Property)
                       (let ([name.value (assq 'name attrs)])
                         (when (pair? name.value)
-                          (cons (string->symbol (assert (cdr name.value) string?))
+                          (cons (xml:attr-value->symbol (cdr name.value))
                                 (for/hasheq : (Immutable-HashTable Symbol String)
                                   ([attr (in-list attrs)] #:when (not (eq? (car attr) 'name)))
                                   (let ([v (cdr attr)])

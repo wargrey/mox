@@ -7,7 +7,8 @@
 
 (require "../moxml.rkt")
 
-(require "dom/presentation.rkt")
+(require "ml/presentation.rkt")
+(require "ml/master/slide.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define pptx-name : Symbol 'pptx)
@@ -18,7 +19,7 @@
    [properties : XML-Document]
    [slides : (Listof XML-Document)]
    [slide-layouts : (Listof XML-Document)]
-   [slide-masters : (Listof XML-Document)]
+   [slide-masters : (Listof PPTX-Slide-Master)]
    [view : (Option XML-Document)]
    [tags : (Listof XML-Document)]
    [comment-authors : (Option XML-Document)]
@@ -37,7 +38,7 @@
     (define &presentationPr : (Boxof XML-Document) (box empty-presentationPr))
     (define &slds : (Boxof (Listof XML-Document)) (box null))
     (define &sldLayouts : (Boxof (Listof XML-Document)) (box null))
-    (define &sldMasters : (Boxof (Listof XML-Document)) (box null))
+    (define &sldMasters : (Boxof (Listof PPTX-Slide-Master)) (box null))
     (define &sldSyncPrs : (Boxof (Listof XML-Document)) (box null))
     (define &viewPr : (Boxof (Option XML-Document)) (box #false))
     (define &tagLst : (Boxof (Listof XML-Document)) (box null))
@@ -63,7 +64,7 @@
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml)
                  (set-box! &sldLayouts (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &sldLayouts)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml)
-                 (set-box! &sldMasters (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &sldMasters)))]
+                 (set-box! &sldMasters (cons (read-xml-datum /dev/pkgin pptx-slide-master-sax-handler empty-slide-master) (unbox &sldMasters)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.tags+xml)
                  (set-box! &tagLst (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &tagLst)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideUpdateInfo+xml)
@@ -90,7 +91,7 @@
                               (unbox &cmAuthorLst) (unbox &cmLst)
                               (unbox &handoutMaster)
                               (unbox &notesMaster) (reverse (unbox &notes))
-                              (reverse (unbox &sldMasters)))))))
+                              (reverse (unbox &sldSyncPrs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define empty-presentationPr : XML-Document (xml-blank 'presentationPr))

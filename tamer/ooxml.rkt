@@ -4,6 +4,7 @@
 (provide (all-from-out "../docx.rkt"))
 (provide (all-from-out "../xlsx.rkt"))
 (provide (all-from-out "../pptx.rkt"))
+(provide (all-from-out sgml/sax))
 (provide (all-from-out racket/logging racket/file racket/path racket/port racket/pretty))
 
 (require "../docx.rkt")
@@ -15,6 +16,8 @@
 (require racket/path)
 (require racket/port)
 (require racket/pretty)
+
+(require sgml/sax)
 
 (require (for-syntax racket/base))
 

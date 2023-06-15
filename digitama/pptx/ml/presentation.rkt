@@ -6,37 +6,8 @@
 
 (require sgml/sax)
 
-(require "../../mox/dialect.rkt")
-(require "../../mox/datatype.rkt")
-(require "datatype.rkt")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-mox-attribute presentation #:for pptx
-  ([serverZoom : Flonum #:= [#false 0.5] #:<-> xml:attr-value->flonum]
-   [firstSlideNum : Index #:= [#false 1] #:<-> xml:attr-value->index]
-   [showSpecialPlsOnTitleSld : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
-   [rtl : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [removePersonalInfoOnSave : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [compatMode : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [strictFirstAndLastChars : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
-   [embedTrueTypeFonts : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [saveSubsetFonts : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [autoCompressPictures : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
-   [bookmarkIdSeed : Index #:= [#false 1] #:<-> xml:attr-value->index]
-   [conformance : PPTX-Conformance-Class #:= #false #:<-> xml:attr-value->pptx-conformance-class]))
-
-(define-mox-attribute slide-master-entry #:for pptx
-  ([id : Natural #:= [] #:<-> mox:attr-value->slide-master-id]
-   [r:id : Symbol #:= [] #:<-> mox:attr-value->relationship-id]))
-
-(define-mox-attribute slide-entry #:for pptx
-  ([id : Natural #:= [] #:<-> mox:attr-value->slide-id]
-   [r:id : Symbol #:= [] #:<-> mox:attr-value->relationship-id]))
-
-(define-mox-attribute slide-size #:for pptx
-  ([cx : Index #:<-> mox:attr-value->slide-coordinate]
-   [cy : Index #:<-> mox:attr-value->slide-coordinate]
-   [type : PPTX-Slide-Size-Type #:= [#false 'custom] #:<-> xml:attr-value->pptx-slide-size-type]))
+(require "../../drawing/ml/main.rkt")
+(require "pml.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-struct pptx-presentation : PPTX-Presentation
@@ -53,8 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Fundamentals And Markup Language References 19.2
-(define presentation-sax-element : (XML-Element-Handler PPTX-Presentation)
-  (λ [element depth attrs ?empty ?preserve self]
+(define pptx-presentation-sax-element : (XML-Element-Handler PPTX-Presentation)
+  (lambda [element depth attrs ?empty ?preserve self]
     (if (and attrs)
         (case element
           [(p:presentation)
@@ -73,15 +44,16 @@
           [(p:notesSz)
            (let-values ([(ntsz rest) (mox-attributes-extract-positive-2dsize attrs 'cx 'cy)])
              (remake-pptx-presentation self #:notes-size (or ntsz (pptx-presentation-notes-size self))))]
-          [else #| TODO: p:defaultTextStyle |# self])
+          [(p:sldMasterIdLst p:sldIdLst) self]
+          [else #false])
 
         #| ETag |#
         (case element
           [(p:sldMasterIdLst) (remake-pptx-presentation self #:slide-masters (reverse (pptx-presentation-slide-masters self)))]
           [(p:sldIdLst) (remake-pptx-presentation self #:slides (reverse (pptx-presentation-slides self)))]
-          [else self]))))
+          [else #false]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define pptx-presentation-sax-handler : (XML-Event-Handlerof PPTX-Presentation)
   ((inst make-xml-event-handler PPTX-Presentation)
-   #:element presentation-sax-element))
+   #:element pptx-presentation-sax-element))

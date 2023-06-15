@@ -9,8 +9,12 @@
   (or ($1)
       (build-path (#%dir) "tamer.pptx")))
 
-(define pptx.zip (time (read-pptx-package file.pptx)))
+(define pptx.zip
+  (parameterize ([default-sax-event-postfilter sax-handler/xml-writer])
+    (time (read-pptx-package file.pptx))))
+
 (define powerpoint.ml (mox-self pptx.zip))
 
-(mox-powerpoint-presentation powerpoint.ml)
 (mox-pkg-orphans pptx.zip)
+(mox-powerpoint-presentation powerpoint.ml)
+(mox-powerpoint-slide-masters powerpoint.ml)
