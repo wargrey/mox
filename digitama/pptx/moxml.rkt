@@ -9,6 +9,7 @@
 
 (require "ml/pml.rkt")
 (require "ml/presentation.rkt")
+(require "ml/slide.rkt")
 (require "ml/master/slide.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,7 +19,7 @@
 (struct mox-powerpoint moxml
   ([presentation : PPTX-Presentation]
    [properties : XML-Document]
-   [slides : (Listof XML-Document)]
+   [slides : (Listof PPTX-Slide)]
    [slide-layouts : (Listof XML-Document)]
    [slide-masters : (Listof PPTX-Slide-Master)]
    [view : (Option XML-Document)]
@@ -37,7 +38,7 @@
   (lambda [pkg-type]
     (define &presentation : (Boxof PPTX-Presentation) (box default-presentation))
     (define &presentationPr : (Boxof XML-Document) (box empty-presentationPr))
-    (define &slds : (Boxof (Listof XML-Document)) (box null))
+    (define &slds : (Boxof (Listof PPTX-Slide)) (box null))
     (define &sldLayouts : (Boxof (Listof XML-Document)) (box null))
     (define &sldMasters : (Boxof (Listof PPTX-Slide-Master)) (box null))
     (define &sldSyncPrs : (Boxof (Listof XML-Document)) (box null))
@@ -64,11 +65,17 @@
                   application/vnd.openxmlformats-officedocument.presentationml.presentationProperties+xml)
                  (set-box! &presentationPr (xml-document-normalize (read-xml-document /dev/pkgin)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slide+xml)
-                 (set-box! &slds (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &slds)))]
+                 (let ([self (case pkg-type
+                               [(text) (read-xml-datum /dev/pkgin pptx-slide-text-sax-handler default-slide)]
+                               [else (read-xml-datum /dev/pkgin pptx-slide-sax-handler default-slide)])])
+                   (set-box! &slds (cons self (unbox &slds))))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml)
                  (set-box! &sldLayouts (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &sldLayouts)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml)
-                 (set-box! &sldMasters (cons (read-xml-datum /dev/pkgin pptx-slide-master-sax-handler empty-slide-master) (unbox &sldMasters)))]
+                 (let ([self (case pkg-type
+                               [(text) (read-xml-datum /dev/pkgin pptx-slide-master-text-sax-handler default-slide-master)]
+                               [else (read-xml-datum /dev/pkgin pptx-slide-master-sax-handler default-slide-master)])])
+                   (set-box! &sldMasters (cons self (unbox &sldMasters))))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.tags+xml)
                  (set-box! &tagLst (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &tagLst)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideUpdateInfo+xml)

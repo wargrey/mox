@@ -8,6 +8,8 @@
 (require "../../../shared/ml/common-simple-types.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-type MOX-Color-Map-Override (U True MOX-Color-Map))
+
 (struct mox-color-attribute () #:type-name MOX-Color-Attribute #:transparent)
 (struct mox-color-transform-attribute () #:type-name MOX-Color-Transform-Attribute #:transparent)
 
@@ -179,9 +181,14 @@
   ([origin : MOX-Color-Attribute]
    [transforms : (Listof MOX-Color-Transform-Attribute) null]))
 
+(define-struct mox-color-map : MOX-Color-Map
+  ([attlist : MOX:Attr:Color-Map]
+   #;[extLst]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define default-mox-color-map : MOX:Attr:Color-Map
-  (make-mox:attr:color-map #:bg1 'lt1 #:tx1 'dk1 #:bg2 'lt2 #:tx2 'dk2
-                           #:accent1 'accent1 #:accent2 'accent2 #:accent3 'accent3
-                           #:accent4 'accent4 #:accent5 'accent5 #:accent6 'accent6
-                           #:hlink 'hlink #:folHlink 'folHlink))
+(define default-mox-color-map : MOX-Color-Map
+  (make-mox-color-map #:attlist
+                      (make-mox:attr:color-map #:bg1 'lt1 #:tx1 'dk1 #:bg2 'lt2 #:tx2 'dk2
+                                               #:accent1 'accent1 #:accent2 'accent2 #:accent3 'accent3
+                                               #:accent4 'accent4 #:accent5 'accent5 #:accent6 'accent6
+                                               #:hlink 'hlink #:folHlink 'folHlink)))

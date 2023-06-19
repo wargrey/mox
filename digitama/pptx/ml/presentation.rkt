@@ -24,12 +24,12 @@
       [(p:sldMasterId)
        (if (list? attlist)
            (let-values ([(mid rest) (extract-pptx:attr:slide-master-entry attlist element)])
-             (remake-pptx-presentation self #:slide-masters (cons (assert mid) (pptx-presentation-slide-masters self))))
+             (remake-pptx-presentation self #:slide-masters (cons mid (pptx-presentation-slide-masters self))))
            (remake-pptx-presentation self #:slide-masters (reverse (pptx-presentation-slide-masters self))))]
       [(p:sldId)
        (if (list? attlist)
            (let-values ([(sid rest) (extract-pptx:attr:slide-entry attlist element)])
-             (remake-pptx-presentation self #:slides (cons (assert sid) (pptx-presentation-slides self))))
+             (remake-pptx-presentation self #:slides (cons sid (pptx-presentation-slides self))))
            (remake-pptx-presentation self #:slides (reverse (pptx-presentation-slides self))))]
       [(p:sldSz)
        (cond [(not attlist) self]

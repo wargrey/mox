@@ -41,6 +41,11 @@
    [bookmarkIdSeed : Index #:= [#false 1] #:<-> xml:attr-value->index]
    [conformance : MOX-Conformance-Class #:= #false #:<-> mox:attr-value->mox-conformance-class]))
 
+(define-mox-attribute slide #:for pptx
+  ([showMasterSp : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
+   [showMasterPhAnim : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
+   [show : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]))
+
 (define-mox-attribute slide-master-entry #:for pptx
   ([id : Natural #:= [] #:<-> mox:attr-value->slide-master-id]
    [r:id : Symbol #:= [] #:<-> mox:attr-value->relationship-id]))
@@ -72,6 +77,12 @@
 (define-struct* pptx-slide-master : PPTX-Slide-Master
   ([namespaces : MOX-Namespaces null]
    [preserve? : XML-Boolean 'false]
-   [color-map : MOX:Attr:Color-Map default-mox-color-map]
+   [color-map : MOX-Color-Map default-mox-color-map]
    [layouts : (Listof PPTX:Attr:Slide-Layout-Entry) null])
+  #:transparent)
+
+(define-struct* pptx-slide : PPTX-Slide
+  ([namespaces : MOX-Namespaces null]
+   [attlist : (Option PPTX:Attr:Slide) #false]
+   [color-map : (Option MOX-Color-Map-Override) #false])
   #:transparent)
