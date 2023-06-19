@@ -32,7 +32,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-word-agent : (MOXML-Agentof MOX-Word)
-  (lambda []
+  (lambda [pkg-type]
     (define-values (main-unzip main-realize) (moxml-document-agent))
     (define-values (glos-unzip glos-realize) (moxml-document-agent))
     (define &header : (Boxof (Option XML-Document)) (box #false))

@@ -54,7 +54,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-excel-agent : (MOXML-Agentof MOX-Excel)
-  (lambda []
+  (lambda [pkg-type]
     (define &workbook : (Boxof XML-Document) (box empty-workbook))
     (define &worksheets : (Boxof (Listof XML-Document)) (box null))
     (define &sst : (Boxof XML-Document) (box empty-shared-string-table))

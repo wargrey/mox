@@ -11,7 +11,7 @@
 
 (define pptx.zip
   (parameterize ([default-sax-event-postfilter sax-handler/xml-writer])
-    (time (read-pptx-package file.pptx))))
+    (time (read-pptx-package-for-text file.pptx))))
 
 (define powerpoint.ml (mox-self pptx.zip))
 

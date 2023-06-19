@@ -1,13 +1,12 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide (for-syntax (all-defined-out)))
+(provide (all-from-out sgml/digitama/plain/dialect))
 
 (require racket/symbol)
 (require digimon/syntax)
 
 (require sgml/digitama/plain/dialect)
-(require sgml/digitama/plain/datatype)
 (require sgml/digitama/plain/grammar)
 
 (require (for-syntax syntax/parse))
@@ -23,7 +22,7 @@
 
 (define-syntax (define-mox-attribute stx)
   (syntax-parse stx #:literals [:]
-    [(_ attr-name #:for x
+    [(_ attr-name #:for x (~optional (~seq #:-> parent) #:defaults ([parent #'mox-attribute]))
         ([field : FieldType (~optional (~seq #:= default-vals) #:defaults ([default-vals #'[]])) def-rest ...] ...)
         options ...)
      (with-syntax* ([(mox:attr MOX:Attr extract-attr attr->xexpr) (racket->mox:attr-names #'x #'attr-name)]
@@ -39,7 +38,7 @@
                              [(null? (cdr defvals)) (list (car defvals) (car defvals) (list (car defvals)) null)]
                              [else (list (car defvals) <type> (list (car defvals)) (cdr defvals))]))])
        (syntax/loc stx
-         (begin (define-xml-attribute mox:attr : MOX:Attr #:-> mox-attribute #:with extract-attr attr->xexpr
+         (begin (define-xml-attribute mox:attr : MOX:Attr #:-> parent #:with extract-attr attr->xexpr
                   ([field : (U FieldType OptionType) #:= absent-val ... def-rest ...] ...)
                   #:report mox-report-unrecognized-attributes #false
                   options ...)

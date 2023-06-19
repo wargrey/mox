@@ -7,6 +7,7 @@
 
 (require "../moxml.rkt")
 
+(require "ml/pml.rkt")
 (require "ml/presentation.rkt")
 (require "ml/master/slide.rkt")
 
@@ -33,8 +34,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-power-point-agent : (MOXML-Agentof MOX-PowerPoint)
-  (lambda []
-    (define &presentation : (Boxof PPTX-Presentation) (box empty-presentation))
+  (lambda [pkg-type]
+    (define &presentation : (Boxof PPTX-Presentation) (box default-presentation))
     (define &presentationPr : (Boxof XML-Document) (box empty-presentationPr))
     (define &slds : (Boxof (Listof XML-Document)) (box null))
     (define &sldLayouts : (Boxof (Listof XML-Document)) (box null))
@@ -55,7 +56,10 @@
                 [(application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.template.main+xml)
-                 (set-box! &presentation (read-xml-datum /dev/pkgin pptx-presentation-sax-handler (unbox &presentation)))]
+                 (set-box! &presentation
+                           (case pkg-type
+                             [(text) (read-xml-datum /dev/pkgin pptx-presentation-text-sax-handler (unbox &presentation))]
+                             [else (read-xml-datum /dev/pkgin pptx-presentation-sax-handler (unbox &presentation))]))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.presProps+xml
                   application/vnd.openxmlformats-officedocument.presentationml.presentationProperties+xml)
                  (set-box! &presentationPr (xml-document-normalize (read-xml-document /dev/pkgin)))]

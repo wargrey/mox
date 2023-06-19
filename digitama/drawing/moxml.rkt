@@ -28,7 +28,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-drawingml-agent : (MOXML-Agentof MOX-DrawingML)
-  (lambda []
+  (lambda [pkg-type]
     (define &chartSpaces : (Boxof (Listof XML-Document)) (box null))
     (define &userShapes : (Boxof (Listof XML-Document)) (box null))
     (define &styleDef : (Boxof (Option XML-Document)) (box #false))

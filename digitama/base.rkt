@@ -1,7 +1,8 @@
 #lang typed/racket/base
 
-(provide (all-defined-out))
-(provide MOX-Stdin MOX-Packageof MOX-File-Properties)
+(provide (all-defined-out) MOX-Stdin MOX-Packageof MOX-File-Properties)
+(provide (all-from-out "shared/ml/common-simple-types.rkt"))
+(provide (all-from-out "drawing/ml/main.rkt"))
 (provide (rename-out [mox-document.ml mox-self]
                      [mox-document.ml mox-document]
                      [mox-package-orphans mox-pkg-orphans]))
@@ -14,6 +15,10 @@
 (require "drawing/moxml.rkt")
 (require "shared/moxml.rkt")
 (require "shared/property.rkt")
+
+(require "shared/ml/common-simple-types.rkt")
+
+(require "drawing/ml/main.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define read-moxml-package : (-> MOX-Stdin (MOX-Packageof MOXML))

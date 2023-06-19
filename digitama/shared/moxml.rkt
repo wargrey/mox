@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-sharedml-agent : (MOXML-Agentof MOX-SharedML)
-  (lambda []
+  (lambda [pkg-type]
     (define &cprops-xmlns : (Boxof (Option String)) (box #false))
     (define file-properties : MOX-File-Properties (make-hasheq))
     (define custom-properties : (HashTable Symbol MOX-Custom-Property) (make-hasheq))
