@@ -64,25 +64,36 @@
    [type : PPTX-Slide-Size-Type #:= [#false 'custom] #:<-> xml:attr-value->pptx-slide-size-type]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-struct* pptx-presentation : PPTX-Presentation
+(define-struct pptx-extension-list : PPTX-Extension-List #:-> mox-extension-list
+  ()
+
+  #:substruct
+  [(define-struct pptx-modify-extension-list : PPTX-Modify-Extension-List () #:transparent)]
+  
+  #:transparent)
+
+(define-struct pptx-presentation : PPTX-Presentation
   ([namespaces : MOX-Namespaces null]
    [attlist : (Option PPTX:Attr:Presentation) #false]
    [slide-masters : (Listof PPTX:Attr:Slide-Master-Entry) null]
    [slides : (Listof PPTX:Attr:Slide-Entry) null]
    [slide-size : (Option PPTX:Attr:Slide-Size) #false]
-   [notes-size : (Pairof Index Index) (cons 0 0)]
-   [default-text-style : (Option MOX-Text-List-Style) #false])
+   [notes-size : MOX:Attr:Positive-2Dsize]
+   [default-text-style : (Option MOX-Text-List-Style) #false]
+   [extension : (Option PPTX-Modify-Extension-List) #false])
   #:transparent)
 
-(define-struct* pptx-slide-master : PPTX-Slide-Master
+(define-struct pptx-slide-master : PPTX-Slide-Master
   ([namespaces : MOX-Namespaces null]
    [preserve? : XML-Boolean 'false]
-   [color-map : MOX-Color-Map default-mox-color-map]
-   [layouts : (Listof PPTX:Attr:Slide-Layout-Entry) null])
+   [color-map : MOX-Color-Map]
+   [layouts : (Listof PPTX:Attr:Slide-Layout-Entry) null]
+   [extension : (Option PPTX-Modify-Extension-List) #false])
   #:transparent)
 
-(define-struct* pptx-slide : PPTX-Slide
+(define-struct pptx-slide : PPTX-Slide
   ([namespaces : MOX-Namespaces null]
    [attlist : (Option PPTX:Attr:Slide) #false]
-   [color-map : (Option MOX-Color-Map-Override) #false])
+   [color-map : (Option MOX-Color-Map-Override) #false]
+   [extension : (Option PPTX-Modify-Extension-List) #false])
   #:transparent)

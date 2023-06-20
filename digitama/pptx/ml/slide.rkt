@@ -2,53 +2,40 @@
 
 (provide (all-defined-out))
 
-(require sgml/sax)
+(require sgml/xexpr)
 
 (require "../../drawing/ml/main.rkt")
+
 (require "pml.rkt")
+(require "extLst.rkt")
+
+(require "../../drawing/ml/main/clrMap.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define default-slide : PPTX-Slide (make-pptx-slide))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define pptx-slide-text-sax-element : (XML-Element-Handler PPTX-Slide)
-  (lambda [element xpath attlist ?empty ?preserve self]
-    (case element
-      [(p:sld)
-       (cond [(not attlist) self]
-             [else (let*-values ([(ns rest) (xml-attributes-extract-xmlns attlist)]
-                                 [(a:sld rest) (extract-pptx:attr:slide rest)])
-                     (remake-pptx-slide self #:namespaces ns #:attlist a:sld))])]
-      [(p:sldLayoutId)
-       (cond [(not attlist) self]
-             [else (let-values ([(slid rest) (extract-pptx:attr:slide-layout-entry attlist)])
-                     (remake-pptx-slide #:layouts (cons (assert slid) (pptx-slide-layouts self))
-                                        self))])]
-      [(p:sldLayoutIdLst)
-       (cond [(list? attlist) self]
-             [else (remake-pptx-slide self #:layouts (reverse (pptx-slide-layouts self)))])]
+(define xml-document->slide/text : (-> XML-Document PPTX-Slide)
+  (lambda [master.xml]
+    (define root : XML-Element (assert (xml-root-xexpr master.xml)))
+    (define-values (ns rest) (xml-attributes-extract-xmlns (cadr root)))
+    (define-values (sattr _) (extract-pptx:attr:slide rest (car root)))
 
-      ; color map
-      [(p:clrMapOvr) self]
-      [(a:masterClrMapping) (remake-pptx-slide self #:color-map #true)]
-      [(a:overrideClrMapping)
-       (cond [(not attlist) self]
-             [else (let-values ([(a:cm rest) (extract-mox:attr:color-map attlist)])
-                     (remake-pptx-slide self #:color-map (make-mox-color-map #:attlist (assert a:cm))))])]
+    (let transform ([children : (Listof XExpr-Element-Children) (caddr root)]
+                    [self : PPTX-Slide (remake-pptx-slide default-slide #:namespaces ns #:attlist sattr)])
+      (cond [(pair? children)
+             (let-values ([(child rest) (values (car children) (cdr children))])
+               (with-asserts ([child list?])
+                 (case (car child)
+                   [(p:clrMapOvr)
+                    (transform rest
+                               (let ([clrMap (xml-element->color-map-override child)])
+                                 (if (not clrMap) self (remake-pptx-slide self #:color-map clrMap))))]
+                   [(p:extLst) (transform rest (remake-pptx-slide self #:extension (xml-element->modify-extension-list child)))]
+                   [else (transform rest self)])))]
+            #;[(or (not self) (eq? (pptx-presentation-notes-size self) default-positive-2dsize)) (raise-xml-missing-element-error (car root) 'notesSz)]
+            [else self]))))
 
-      [else #false])))
-
-(define pptx-slide-sax-element : (XML-Element-Handler PPTX-Slide)
-  (lambda [element xpath attlist ?empty ?preserve self]
-    (or (pptx-slide-text-sax-element element xpath attlist ?empty ?preserve self)
-        (case element
-          [else #false]))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define pptx-slide-text-sax-handler : (XML-Event-Handlerof PPTX-Slide)
-  ((inst make-xml-event-handler PPTX-Slide)
-   #:element (values #;sax-element-terminator pptx-slide-text-sax-element)))
-
-(define pptx-slide-sax-handler : (XML-Event-Handlerof PPTX-Slide)
-  ((inst make-xml-event-handler PPTX-Slide)
-   #:element pptx-slide-sax-element))
+(define xml-document->slide : (-> XML-Document PPTX-Slide)
+  (lambda [master.xml]
+    (xml-document->slide/text master.xml)))

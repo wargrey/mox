@@ -1,7 +1,7 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide (all-from-out "main/color.rkt" "main/fill.rkt"))
+(provide (all-from-out "main/color.rkt" "main/fill.rkt" "main/extension.rkt"))
 (provide (rename-out [xml:attr-value->symbol mox:attr-value->relationship-id]))
 
 (require digimon/struct)
@@ -13,6 +13,7 @@
 
 (require "main/color.rkt")
 (require "main/fill.rkt")
+(require "main/extension.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-Coordinate32 (U Fixnum XML-Dimension))
@@ -25,13 +26,6 @@
 (define-xml-enumeration text-underline-type : Text-Underline-Type #:for mox
   [none words sng dbl heavy dotted dottedHeavy dash dashHeavy dashLong dashLongHeavy
         dotDash dotDashHeavy dotDotDash dotDotDashHeavy wavy wavyHeavy wavyDbl])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-attributes-extract-positive-2dsize : (-> (Listof XML-Element-Attribute) Symbol Symbol
-                                                     (Values (Option (Pairof Index Index))
-                                                             (Listof XML-Element-Attribute)))
-  (lambda [attrs x y]
-    (xml-attributes-extract-pair attrs x y mox:attr-value->coordinate mox:attr-value->coordinate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox:attr-value->coordinate32 : (XML-Attribute-Value->Datum (Option MOX-Coordinate32))
@@ -73,6 +67,10 @@
     (xml:attr-value->index v 0 400000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-mox-attribute positive-2dsize #:for mox
+  ([cx : Index #:<-> mox:attr-value->coordinate]
+   [cy : Index #:<-> mox:attr-value->coordinate]))
+
 (define-mox-attribute text-paragraph #:for mox
   ([marL : Index #:= #false #:<-> mox:attr-value->text-margin]
    [marR : Index #:= #false #:<-> mox:attr-value->text-margin]
@@ -117,7 +115,7 @@
    [defRPr : (Option MOX-Text-Character-Property) #false])
   #:transparent)
 
-(define-struct* mox-text-list-style : MOX-Text-List-Style
+(define-struct mox-text-list-style : MOX-Text-List-Style
   ([defPPr : (Option MOX-Text-Paragraph-Property) #false]
    [lvl1pPr : (Option MOX-Text-Paragraph-Property) #false]
    [lvl2pPr : (Option MOX-Text-Paragraph-Property) #false]
@@ -128,5 +126,9 @@
    [lvl7pPr : (Option MOX-Text-Paragraph-Property) #false]
    [lvl8pPr : (Option MOX-Text-Paragraph-Property) #false]
    [lvl9pPr : (Option MOX-Text-Paragraph-Property) #false]
-   #;[extLst])
+   [extLst : (Option MOX-Office-Art-Extension-List) #false])
   #:transparent)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define default-positive-2dsize : MOX:Attr:Positive-2Dsize
+  (make-mox:attr:positive-2dsize #:cx 0 #:cy 0))

@@ -2,80 +2,63 @@
 
 (provide (all-defined-out))
 
-(require digimon/function)
-(require sgml/sax)
+(require sgml/xexpr)
 
 (require "main.rkt")
+(require "main/ext/office-art.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define default-text-list-style : MOX-Text-List-Style (make-mox-text-list-style))
 (define default-text-paragraph-property : MOX-Text-Paragraph-Property (make-mox-text-paragraph-property))
 (define default-text-character-property : MOX-Text-Character-Property (make-mox-text-character-property))
 
-(struct lstStyle mox-text-list-style
-  ([master : Symbol]))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define xml-element->text-list-style : (-> XML-Element (Option MOX-Text-List-Style))
+  (lambda [lstStyle]
+    (let transform ([children : (Listof XExpr-Element-Children) (caddr lstStyle)]
+                    [self : (Option MOX-Text-List-Style) #false])
+      (if (pair? children)
+          (let-values ([(child rest) (values (car children) (cdr children))])
+            (with-asserts ([child list?])
+              (define pPr (xml-element->text-paragraph-property child))
+              (transform rest
+                         (cond [(not pPr) self]
+                               [else (lstStyle-set (or self default-text-list-style)
+                                                   (car child) pPr)]))))
+          self))))
+
+(define xml-element->text-paragraph-property : (-> XML-Element (Option MOX-Text-Paragraph-Property))
+  (lambda [pPr]
+    (define-values (palst rest) (extract-mox:attr:text-paragraph (cadr pPr) (car pPr)))
+    (let transform ([children : (Listof XExpr-Element-Children) (caddr pPr)]
+                    [self : (Option MOX-Text-Paragraph-Property) (and palst (remake-mox-text-paragraph-property default-text-paragraph-property #:attlist palst))])
+      (cond [(pair? children)
+             (let-values ([(child rest) (values (car children) (cdr children))])
+               (with-asserts ([child list?])
+                 (define rPr (xml-element->text-character-property child))
+                 (transform rest
+                            (cond [(not rPr) self]
+                                  [else (remake-mox-text-paragraph-property #:defRPr rPr
+                                                                            (or self default-text-paragraph-property))]))))]
+            [else self]))))
+
+(define xml-element->text-character-property : (-> XML-Element (Option MOX-Text-Character-Property))
+  (lambda [rPr]
+    (define-values (ralst rest) (extract-mox:attr:text-character (cadr rPr) (car rPr)))
+    (and ralst (remake-mox-text-character-property default-text-character-property #:attlist ralst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-list-style-sax-element : (XML-Element-Handler MOX-Text-List-Style)
-  (lambda [element xpath attlist ?empty ?preserve self]
-    (case element
-      [(a:defPPr a:lvl1pPr a:lvl2pPr a:lvl3pPr a:lvl4pPr a:lvl5pPr a:lvl6pPr a:lvl7pPr a:lvl8pPr a:lvl9pPr)
-       (if (list? attlist)
-           (let-values ([(palst rest) (extract-mox:attr:text-paragraph attlist element)]
-                        [(pPr) (lstStyle-ref self element)])
-             (cond [(not palst) (mox-text-list-style-apply lstStyle self element)]
-                   [(not pPr) (lstStyle-set self element (make-mox-text-paragraph-property #:attlist palst))]
-                   [else (lstStyle-set self element (remake-mox-text-paragraph-property pPr #:attlist palst))]))
-           (remake-mox-text-list-style self))]
-      [else (and (lstStyle? self)
-                 (let* ([elem (lstStyle-master self)]
-                        [pPr (lstStyle-ref self elem)]
-                        [pPr++ (mox-subpara-property-sax-element element xpath attlist ?empty ?preserve pPr)])
-                   (and pPr++ (lstStyle-set self elem pPr++))))])))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-subpara-property-sax-element : (XML-Element-Handler (Option MOX-Text-Paragraph-Property))
-  (lambda [element xpath attlist ?empty ?preserve self]
-    (if (list? attlist)
-        (case element
-          [(a:defRPr)
-           (let-values ([(ralst rest) (extract-mox:attr:text-character attlist element)])
-             (cond [(not ralst) self]
-                   [else (let ([pPr (or self default-text-paragraph-property)]
-                               [rPr (make-mox-text-character-property #:attlist ralst)])
-                           (remake-mox-text-paragraph-property pPr #:defRPr rPr))]))]
-          [else #false])
-
-        #| ETage |#
-        self)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define lstStyle-ref : (-> MOX-Text-List-Style Symbol (Option MOX-Text-Paragraph-Property))
-  (lambda [self element]
-    (case element
-      [(a:defPPr) (mox-text-list-style-defPPr self)]
-      [(a:lvl1pPr) (mox-text-list-style-lvl1pPr self)]
-      [(a:lvl2pPr) (mox-text-list-style-lvl2pPr self)]
-      [(a:lvl3pPr) (mox-text-list-style-lvl3pPr self)]
-      [(a:lvl4pPr) (mox-text-list-style-lvl4pPr self)]
-      [(a:lvl5pPr) (mox-text-list-style-lvl5pPr self)]
-      [(a:lvl6pPr) (mox-text-list-style-lvl6pPr self)]
-      [(a:lvl7pPr) (mox-text-list-style-lvl7pPr self)]
-      [(a:lvl8pPr) (mox-text-list-style-lvl8pPr self)]
-      [(a:lvl9pPr) (mox-text-list-style-lvl9pPr self)]
-      [else #false])))
-
-(define lstStyle-set : (-> MOX-Text-List-Style Symbol (Option MOX-Text-Paragraph-Property) MOX-Text-List-Style)
+(define lstStyle-set : (-> MOX-Text-List-Style Symbol MOX-Text-Paragraph-Property MOX-Text-List-Style)
   (lambda [self element pPr]
     (case element
-      [(a:defPPr) (mox-text-list-style-apply lstStyle self #:defPPr pPr element)]
-      [(a:lvl1pPr) (mox-text-list-style-apply lstStyle self #:lvl1pPr pPr element)]
-      [(a:lvl2pPr) (mox-text-list-style-apply lstStyle self #:lvl2pPr pPr element)]
-      [(a:lvl3pPr) (mox-text-list-style-apply lstStyle self #:lvl3pPr pPr element)]
-      [(a:lvl4pPr) (mox-text-list-style-apply lstStyle self #:lvl4pPr pPr element)]
-      [(a:lvl5pPr) (mox-text-list-style-apply lstStyle self #:lvl5pPr pPr element)]
-      [(a:lvl6pPr) (mox-text-list-style-apply lstStyle self #:lvl6pPr pPr element)]
-      [(a:lvl7pPr) (mox-text-list-style-apply lstStyle self #:lvl7pPr pPr element)]
-      [(a:lvl8pPr) (mox-text-list-style-apply lstStyle self #:lvl8pPr pPr element)]
-      [(a:lvl9pPr) (mox-text-list-style-apply lstStyle self #:lvl9pPr pPr element)]
+      [(a:defPPr) (remake-mox-text-list-style self #:defPPr pPr)]
+      [(a:lvl1pPr) (remake-mox-text-list-style self #:lvl1pPr pPr)]
+      [(a:lvl2pPr) (remake-mox-text-list-style self #:lvl2pPr pPr)]
+      [(a:lvl3pPr) (remake-mox-text-list-style self #:lvl3pPr pPr)]
+      [(a:lvl4pPr) (remake-mox-text-list-style self #:lvl4pPr pPr)]
+      [(a:lvl5pPr) (remake-mox-text-list-style self #:lvl5pPr pPr)]
+      [(a:lvl6pPr) (remake-mox-text-list-style self #:lvl6pPr pPr)]
+      [(a:lvl7pPr) (remake-mox-text-list-style self #:lvl7pPr pPr)]
+      [(a:lvl8pPr) (remake-mox-text-list-style self #:lvl8pPr pPr)]
+      [(a:lvl9pPr) (remake-mox-text-list-style self #:lvl9pPr pPr)]
       [else self])))

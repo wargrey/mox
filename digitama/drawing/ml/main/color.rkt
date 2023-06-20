@@ -179,11 +179,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-struct mox-color : MOX-Color
   ([origin : MOX-Color-Attribute]
-   [transforms : (Listof MOX-Color-Transform-Attribute) null]))
+   [transforms : (Listof MOX-Color-Transform-Attribute) null])
+  #:transparent)
 
 (define-struct mox-color-map : MOX-Color-Map
   ([attlist : MOX:Attr:Color-Map]
-   #;[extLst]))
+   #;[extLst])
+  #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define default-mox-color-map : MOX-Color-Map
