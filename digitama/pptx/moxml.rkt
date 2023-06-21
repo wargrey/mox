@@ -17,11 +17,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct mox-powerpoint moxml
-  ([presentation : PPTX-Presentation]
+  ([presentation : PPTX:Presentation]
    [properties : XML-Document]
-   [slides : (Listof PPTX-Slide)]
+   [slides : (Listof PPTX:Slide)]
    [slide-layouts : (Listof XML-Document)]
-   [slide-masters : (Listof PPTX-Slide-Master)]
+   [slide-masters : (Listof PPTX:Slide-Master)]
    [view : (Option XML-Document)]
    [tags : (Listof XML-Document)]
    [comment-authors : (Option XML-Document)]
@@ -36,11 +36,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-power-point-agent : (MOXML-Agentof MOX-PowerPoint)
   (lambda [pkg-type]
-    (define &presentation : (Boxof PPTX-Presentation) (box default-presentation))
+    (define &presentation : (Boxof PPTX:Presentation) (box default-presentation))
     (define &presentationPr : (Boxof XML-Document) (box empty-presentationPr))
-    (define &slds : (Boxof (Listof PPTX-Slide)) (box null))
+    (define &slds : (Boxof (Listof PPTX:Slide)) (box null))
     (define &sldLayouts : (Boxof (Listof XML-Document)) (box null))
-    (define &sldMasters : (Boxof (Listof PPTX-Slide-Master)) (box null))
+    (define &sldMasters : (Boxof (Listof PPTX:Slide-Master)) (box null))
     (define &sldSyncPrs : (Boxof (Listof XML-Document)) (box null))
     (define &viewPr : (Boxof (Option XML-Document)) (box #false))
     (define &tagLst : (Boxof (Listof XML-Document)) (box null))

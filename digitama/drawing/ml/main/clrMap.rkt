@@ -7,10 +7,10 @@
 (require "color.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define xml-element->color-map : (-> XML-Element MOX-Color-Map)
+(define xml-element->color-map : (-> XML-Element MOX:Color-Map)
   (lambda [clrMap]
-    (define-values (a:cm _) (extract-mox:attr:color-map (cadr clrMap)))
-    (remake-mox-color-map default-mox-color-map #:attlist a:cm)))
+    (define-values (a:cm _) (extract-mox#color-map (cadr clrMap)))
+    (remake-mox:color-map default-mox-color-map #:attlist a:cm)))
 
 (define xml-element->color-map-override : (-> XML-Element (Option MOX-Color-Map-Override))
   (lambda [clrMapOvr]

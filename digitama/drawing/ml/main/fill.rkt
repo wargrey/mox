@@ -2,48 +2,29 @@
 
 (provide (all-defined-out))
 
-(require digimon/struct)
-
 (require "color.rkt")
 
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-mox-attribute blip-fill #:for mox
+(define-type MOX-Line-Fill-Property (U MOX:None-Fill MOX:Solid-Fill MOX:Gradient-Fill MOX:Pattern-Fill))
+(define-type MOX-Fill-Property (U MOX-Line-Fill-Property MOX:Group-Fill MOX:Blip-Fill))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-mox-element none-fill #:for mox ())
+(define-mox-element group-fill #:for mox ())
+
+(define-mox-element solid-fill #:for mox ())
+(define-mox-element gradient-fill #:for mox ())
+(define-mox-element pattern-fill #:for mox ())
+
+(define-mox-element blip-fill #:for mox
+  #:attlist
   ([dpi : Index #:= #false #:<-> xml:attr-value->index]
-   [rotWithShape : XML-Boolean #:= #false #:<-> xml:attr-value->boolean]))
+   [rotWithShape : XML-Boolean #:= #false #:<-> xml:attr-value->boolean])
+  ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-structs mox-fill-property : MOX-Fill-Property ()
-  #:substruct
-  [(define-struct mox-group-fill : MOX-Group-Fill () #:transparent)
-   
-   (define-struct mox-blip-fill : MOX-Blip-Fill
-     ([attlist : MOX:Attr:Blip-Fill]
-      #;[blip ])
-     #:transparent)
-
-   (define-struct mox-line-fill-property : MOX-Line-Fill-Property ()
-     #:substruct
-     [(define-struct mox-none-fill : MOX-None-Fill () #:transparent)
-
-      (define-struct mox-solid-fill : MOX-Solid-Fill
-        ([color : (Option MOX-Color-Attribute)])
-        #:transparent)
-
-      (define-struct mox-gradient-fill : MOX-Gradient-Fill
-        ()
-        #:transparent)
-
-      (define-struct mox-pattern-fill : MOX-Pattern-Fill
-        ()
-        #:transparent)]
-     
-     #:transparent)]
-
-  #:transparent)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-none-fill-singleton : MOX-None-Fill (mox-none-fill))
-(define mox-group-fill-singleton : MOX-Group-Fill (mox-group-fill))
+(define mox-none-fill-singleton : MOX:None-Fill (mox:none-fill))
+(define mox-group-fill-singleton : MOX:Group-Fill (mox:group-fill))

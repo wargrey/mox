@@ -7,8 +7,10 @@
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")
 
+(require "extension.rkt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type MOX-Color-Map-Override (U True MOX-Color-Map))
+(define-type MOX-Color-Map-Override (U True MOX:Color-Map))
 
 (struct mox-color-attribute () #:type-name MOX-Color-Attribute #:transparent)
 (struct mox-color-transform-attribute () #:type-name MOX-Color-Transform-Attribute #:transparent)
@@ -64,20 +66,6 @@
     (xml:attr-value->index v 0 21600000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-mox-attribute color-map #:for mox
-  ([bg1 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [tx1 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [bg2 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [tx2 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [accent1 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [accent2 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [accent3 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [accent4 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [accent5 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [accent6 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [hlink : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
-   [folHlink : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]))
-
 (define-mox-attribute scrgb-color #:for mox #:-> mox-color-attribute
   ([r : XML-Nonnegative-Percentage #:<-> xml:attr-value+>fixed-percentage]
    [g : XML-Nonnegative-Percentage #:<-> xml:attr-value+>fixed-percentage]
@@ -177,20 +165,37 @@
 (define-mox-attribute invGamma #:for mox #:-> mox-color-transform-attribute ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-mox-element color-map #:for mox
+  #:attlist
+  ([bg1 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [tx1 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [bg2 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [tx2 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [accent1 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [accent2 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [accent3 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [accent4 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [accent5 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [accent6 : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [hlink : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index]
+   [folHlink : Color-Scheme-Index #:= [] #:<-> mox:attr-value->color-scheme-index])
+  ([extension : (Option MOX:Office-Art-Extension-List) #false]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; NOTE
+; This is not a concrete element.
+; By not defining structs for each color elements that only differ in attributes
+;   with one additional field for transformations.
+; I provide this struct as an abstract and virtual color element.
 (define-struct mox-color : MOX-Color
-  ([origin : MOX-Color-Attribute]
+  ([attlist : MOX-Color-Attribute]
    [transforms : (Listof MOX-Color-Transform-Attribute) null])
   #:transparent)
 
-(define-struct mox-color-map : MOX-Color-Map
-  ([attlist : MOX:Attr:Color-Map]
-   #;[extLst])
-  #:transparent)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define default-mox-color-map : MOX-Color-Map
-  (make-mox-color-map #:attlist
-                      (make-mox:attr:color-map #:bg1 'lt1 #:tx1 'dk1 #:bg2 'lt2 #:tx2 'dk2
-                                               #:accent1 'accent1 #:accent2 'accent2 #:accent3 'accent3
-                                               #:accent4 'accent4 #:accent5 'accent5 #:accent6 'accent6
-                                               #:hlink 'hlink #:folHlink 'folHlink)))
+(define default-mox-color-map : MOX:Color-Map
+  (make-mox:color-map #:attlist
+                      (make-mox#color-map #:bg1 'lt1 #:tx1 'dk1 #:bg2 'lt2 #:tx2 'dk2
+                                          #:accent1 'accent1 #:accent2 'accent2 #:accent3 'accent3
+                                          #:accent4 'accent4 #:accent5 'accent5 #:accent6 'accent6
+                                          #:hlink 'hlink #:folHlink 'folHlink)))

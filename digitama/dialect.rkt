@@ -4,21 +4,51 @@
 (provide (all-from-out sgml/digitama/plain/dialect))
 
 (require racket/symbol)
+
 (require digimon/syntax)
+(require digimon/struct)
 
 (require sgml/digitama/plain/dialect)
 (require sgml/digitama/plain/grammar)
 
 (require (for-syntax syntax/parse))
+(require (for-syntax racket/string))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-for-syntax (racket->mox:elem-names <prefix> <e>)
+  (define prefix (symbol->immutable-string (syntax-e <prefix>)))
+  (define elem (symbol->immutable-string (syntax-e <e>)))
+  (list (format-id <e> "~a:~a" prefix elem)
+        (format-id <e> "~a:~a" (string-upcase prefix) (string-titlecase elem))))
+
 (define-for-syntax (racket->mox:attr-names <prefix> <a>)
   (define prefix (symbol->immutable-string (syntax-e <prefix>)))
   (define attrib (symbol->immutable-string (syntax-e <a>)))
-  (list (format-id <a> "~a:attr:~a" prefix attrib)
-        (format-id <a> "~a:Attr:~a" (string-upcase prefix) (string-titlecase attrib))
-        (format-id <a> "extract-~a:attr:~a" prefix attrib)
-        (format-id <a> "~a:attr:~a->xml-attributes" prefix attrib)))
+  (list (format-id <a> "~a#~a" prefix attrib)
+        (format-id <a> "~a#~a" (string-upcase prefix) (string-titlecase attrib))
+        (format-id <a> "extract-~a#~a" prefix attrib)
+        (format-id <a> "~a#~a->xml-attributes" prefix attrib)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-syntax (define-mox-element stx)
+  (syntax-parse stx #:literals [:]
+    [(_ (~optional (~seq (~and #:root kw-root))) id #:for x
+        (~optional (~seq #:-> parent) #:defaults ([parent #'mox-attribute]))
+        (~optional (~seq (~and #:attlist kw-attlist)
+                         (~optional (~seq (~and #:mandatory mandatory)))
+                         (attr-defs ...))
+                   #:defaults ([(attr-defs 1) null]))
+        (field-defs ...))
+     (with-syntax* ([(elem Elem) (racket->mox:elem-names #'x #'id)]
+                    [(xmlns attlist) (list (format-id #'id "xmlns") (format-id #'id "attlist"))]
+                    [(mox:attr MOX:Attr extract-attr attr->xexpr) (racket->mox:attr-names #'x #'id)]
+                    [(AttlistType defattr ...) (if (attribute mandatory) (list #'MOX:Attr) (list #'(Option MOX:Attr) #'#false))]
+                    [(defs-for-root ...) (if (attribute kw-root) (list #'[xmlns : XML-Namespaces null]) null)]
+                    [(defs-for-attr ...) (if (null? (syntax-e #'[attr-defs ...])) null (list #'[attlist : AttlistType defattr ...]))]
+                    [define-attr (if (attribute kw-attlist) #'(define-mox-attribute id #:for x #:-> parent (attr-defs ...)) #'(void))])
+       (syntax/loc stx
+         (begin define-attr
+                (define-struct elem : Elem (defs-for-root ... defs-for-attr ... field-defs ...) #:transparent))))]))
 
 (define-syntax (define-mox-attribute stx)
   (syntax-parse stx #:literals [:]
