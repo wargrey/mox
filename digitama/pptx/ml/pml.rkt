@@ -9,18 +9,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type PPTX-Background (U PPTX:Background-Property MOX:Style-Matrix-Reference))
+(define-type PPTX-Shape (U PPTX:Shape PPTX:Group-Shape PPTX:Picture
+                           PPTX:Graphical-Object-Frame PPTX#Content-Part))
+
+(struct (IdPr) pptx-nvisual-property
+  ([cNvPr : MOX:Nvisual-Canvas-Property]
+   [cNvIdPr : IdPr]
+   [nvPr : PPTX:Nvisual-Application-Property])
+  #:type-name PPTX-NVisual-Property
+  #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-xml-enumeration pptx-direction : PPTX-Direction
+(define-xml-enumeration direction : Direction #:for pptx
   [horz vert])
 
-(define-xml-enumeration pptx-slide-size-type : PPTX-Slide-Size-Type
-  [screen4x3 letter A4 35mm overhead banner custom ledger A3 B4ISO B5ISO B4JIS B5JIS hagakiCard screen16x9 screen16x10])
+(define-xml-enumeration slide-size-type : Slide-Size-Type #:for pptx
+  [screen4x3 letter A4 35mm overhead banner custom ledger A3 B4ISO B5ISO
+             B4JIS B5JIS hagakiCard screen16x9 screen16x10])
 
-(define-xml-enumeration pptx-placeholder-type : PPTX-Placeholder-Type
+(define-xml-enumeration placeholder-type : Placeholder-Type #:for pptx
   [title body ctrTitle subTitle dt sldNum ftr hdr obj chart tbl clipArt dgm media sldImg pic])
 
-(define-xml-enumeration pptx-placeholder-size : PPTX-Placeholder-Size
+(define-xml-enumeration placeholder-size : Placeholder-Size #:for pptx
   [full half quarter])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,7 +62,10 @@
 (define-mox-attribute slide-size #:for pptx
   ([cx : Index #:<-> mox:attr-value->slide-coordinate]
    [cy : Index #:<-> mox:attr-value->slide-coordinate]
-   [type : PPTX-Slide-Size-Type #:= [#false 'custom] #:<-> xml:attr-value->pptx-slide-size-type]))
+   [type : Slide-Size-Type #:= [#false 'custom] #:<-> pptx:attr-value->slide-size-type]))
+
+(define-mox-attribute content-part #:for pptx
+  ([r:id : Symbol #:<-> mox:attr-value->relationship-id]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element extension-list #:for pptx ())
@@ -62,50 +75,78 @@
   #:attlist
   ([shadeToTitle : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
   ([fill : MOX-Fill-Property]
-   [extension : (Option PPTX:Extension-List) #false]))
+   [extLst : (Option PPTX:Extension-List) #false]))
 
 (define-mox-element background #:for pptx
   #:attlist
   ([bwMode : Black-White-Mode #:= [#false 'white] #:<-> mox:attr-value->black-white-mode])
-  ([choice : PPTX-Background]))
+  ([bg : PPTX-Background]))
 
 (define-mox-element placeholder #:for pptx
   #:attlist
-  ([type : PPTX-Placeholder-Type #:= [#false 'obj] #:<-> xml:attr-value->pptx-placeholder-type]
-   [orient : PPTX-Direction #:= [#false 'horz] #:<-> xml:attr-value->pptx-direction]
-   [sz : PPTX-Placeholder-Size #:= [#false 'full] #:<-> xml:attr-value->pptx-placeholder-size]
+  ([type : Placeholder-Type #:= [#false 'obj] #:<-> pptx:attr-value->placeholder-type]
+   [orient : Direction #:= [#false 'horz] #:<-> pptx:attr-value->direction]
+   [sz : Placeholder-Size #:= [#false 'full] #:<-> pptx:attr-value->placeholder-size]
    [idx : Index #:= [#false 0] #:<-> xml:attr-value->index]
    [hasCustomPromp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extension : (Option PPTX:Extension-List-Modify) #false]))
+  ([extLst : (Option PPTX:Extension-List-Modify) #false]))
 
-(define-mox-element nvisual-application-drawing-property #:for pptx
+(define-mox-element nvisual-application-property #:for pptx
   #:attlist
   ([isPhoto : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
    [useDrawn : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([placeholder : (Option PPTX:Placeholder) #false]
+  ([ph : (Option PPTX:Placeholder) #false]
    [media : (Option MOX-Media) #false]
-   [extension : (Option PPTX:Extension-List) #false]))
+   [extLst : (Option PPTX:Extension-List) #false]))
 
-(define-mox-element nvisual-group-shape #:for pptx
-  ([drawing-property : MOX:Nvisual-Drawing-Property]
-   [shape-property : MOX:Nvisual-Group-Drawing-Shape-Property]
-   [application-property : PPTX:Nvisual-Application-Drawing-Property]))
+(define-mox-element shape #:for pptx
+  #:attlist
+  ([useBgFill : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
+  ([nvSpPr : (PPTX-NVisual-Property MOX:Nvisual-Shape-Property)]
+   [spPr : MOX:Shape-Property]
+   [style : (Option MOX:Shape-Style) #false]
+   [txBody : (Option MOX:Text-Body) #false]
+   [extLst : (Option PPTX:Extension-List-Modify) #false]))
 
-(define-mox-element shape-tree #:for pptx
-  ([nvisual-group-shape-property : PPTX:Nvisual-Group-Shape]))
+(define-mox-element group-shape #:for pptx
+  ([nvGrpSpPr : (PPTX-NVisual-Property MOX:Nvisual-Group-Shape-Property)]
+   [grpSpPr : MOX:Group-Shape-Property]
+   [shapes : (Listof PPTX-Shape) null]
+   [extLst : (Option PPTX:Extension-List-Modify) #false]))
+
+(define-mox-element graphical-object-frame #:for pptx
+  #:attlist
+  ([bwMode : Black-White-Mode #:= [#false 'white] #:<-> mox:attr-value->black-white-mode])
+  ([nvGraphicFramePr : (PPTX-NVisual-Property MOX:Nvisual-Graphic-Frame-Property)]
+   [xfrm : (Option MOX:Transform2d) #false]
+   [graphic : MOX:Graphical-Object-Data]
+   [extLst : (Option MOX:Office-Art-Extension-List) #false]))
+
+(define-mox-element picture #:for pptx
+  ([nvPicPr : (PPTX-NVisual-Property MOX:Nvisual-Picture-Property)]
+   [blipFill : MOX:Blip-Fill]
+   [spPr : MOX:Shape-Property]
+   [style : (Option MOX:Shape-Style) #false]
+   [extLst : (Option MOX:Office-Art-Extension-List) #false]))
+
+(define-mox-element connector #:for pptx
+  ([nvCxnSpPr : (PPTX-NVisual-Property MOX:Nvisual-Connector-Property)]
+   [spPr : MOX:Shape-Property]
+   [style : (Option MOX:Shape-Style) #false]
+   [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element common-slide-data #:for pptx
   #:attlist
   ([name : String #:= #false #:<-> xml:attr-value->string])
-  ([background : (Option PPTX-Background) #false]
-   [shape-tree : PPTX:Shape-Tree]
-   [extension : (Option PPTX:Extension-List) #false]))
+  ([bg : (Option PPTX-Background) #false]
+   [spTree : PPTX:Group-Shape]
+   [extLst : (Option PPTX:Extension-List) #false]))
 
 (define-mox-element slide-master-text-styles #:for pptx
-  ([title : (Option MOX:Text-List-Style) #false]
-   [body : (Option MOX:Text-List-Style) #false]
-   [other : (Option MOX:Text-List-Style) #false]
-   [extension : (Option PPTX:Extension-List) #false]))
+  ([titleStyle : (Option MOX:Text-List-Style) #false]
+   [bodyStyle : (Option MOX:Text-List-Style) #false]
+   [otherStyle : (Option MOX:Text-List-Style) #false]
+   [extLst : (Option PPTX:Extension-List) #false]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element #:root presentation #:for pptx
@@ -122,25 +163,27 @@
    [autoCompressPictures : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
    [bookmarkIdSeed : Index #:= [#false 1] #:<-> xml:attr-value->index]
    [conformance : MOX-Conformance-Class #:= #false #:<-> mox:attr-value->mox-conformance-class])
-  ([slide-masters : (Listof PPTX#Slide-Master-Entry) null]
-   [slides : (Listof PPTX#Slide-Entry) null]
-   [slide-size : (Option PPTX#Slide-Size) #false]
-   [notes-size : MOX#Positive-2Dsize]
-   [default-text-style : (Option MOX:Text-List-Style) #false]
-   [extension : (Option PPTX:Extension-List-Modify) #false]))
+  ([sldMasterIdLst : (Listof PPTX#Slide-Master-Entry) null]
+   [sldIdLst : (Listof PPTX#Slide-Entry) null]
+   [sldSz : (Option PPTX#Slide-Size) #false]
+   [notesSz : MOX#Positive-Size2d]
+   [defaultTextStyle : (Option MOX:Text-List-Style) #false]
+   [extLst : (Option PPTX:Extension-List-Modify) #false]))
 
 (define-mox-element #:root slide-master #:for pptx
   #:attlist
   ([preserve : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([color-map : MOX:Color-Map]
-   [layouts : (Listof PPTX#Slide-Layout-Entry) null]
-   [styles : (Option PPTX:Slide-Master-Text-Styles) #false]
-   [extension : (Option PPTX:Extension-List-Modify) #false]))
+  ([cSld : PPTX:Common-Slide-Data]
+   [clrMap : MOX:Color-Map]
+   [sldLayoutIdLst : (Listof PPTX#Slide-Layout-Entry) null]
+   [txStyles : (Option PPTX:Slide-Master-Text-Styles) #false]
+   [extLst : (Option PPTX:Extension-List-Modify) #false]))
 
 (define-mox-element #:root slide #:for pptx
   #:attlist
   ([showMasterSp : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
    [showMasterPhAnim : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
    [show : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean])
-  ([color-map : (Option MOX-Color-Map-Override) #false]
-   [extension : (Option PPTX:Extension-List-Modify) #false]))
+  ([cSld : PPTX:Common-Slide-Data]
+   [clrMapOvr : (Option MOX-Color-Map-Override) #false]
+   [extLst : (Option PPTX:Extension-List-Modify) #false]))

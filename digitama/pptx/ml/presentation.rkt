@@ -11,7 +11,7 @@
 (require "extLst.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define default-presentation : PPTX:Presentation (make-pptx:presentation #:notes-size default-positive-2dsize))
+(define default-presentation : PPTX:Presentation (make-pptx:presentation #:notesSz default-positive-size2d))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define xml-document->presentation/text : (-> XML-Document PPTX:Presentation)
@@ -24,23 +24,23 @@
       (for/fold ([self : PPTX:Presentation (remake-pptx:presentation default-presentation #:xmlns ns #:attlist pattr)])
                 ([child (in-list (caddr root))] #:when (list? child))
         (case (car child)
-          [(p:sldMasterIdLst) (remake-pptx:presentation self #:slide-masters (xml-element->slide-master-entries child))]
-          [(p:sldIdLst) (remake-pptx:presentation self #:slides (xml-element->slide-entries child))]
+          [(p:sldMasterIdLst) (remake-pptx:presentation self #:sldMasterIdLst (xml-element->slide-master-entries child))]
+          [(p:sldIdLst) (remake-pptx:presentation self #:sldIdLst (xml-element->slide-entries child))]
           [(p:sldSz)
            (let-values ([(sldsz _) (extract-pptx#slide-size (cadr child) (car child))])
-             (remake-pptx:presentation self #:slide-size sldsz))]
+             (remake-pptx:presentation self #:sldSz sldsz))]
           [(p:notesSz)
-           (let-values ([(ntsz _) (extract-mox#positive-2dsize (cadr child))])
-             (remake-pptx:presentation self #:notes-size ntsz))]
+           (let-values ([(ntsz _) (extract-mox#positive-size2d (cadr child))])
+             (remake-pptx:presentation self #:notesSz ntsz))]
           [(p:defaultTextStyle)
            (let ([lstStyle (xml-element->text-list-style child)])
-             (if (not lstStyle) self (remake-pptx:presentation self #:default-text-style lstStyle)))]
-          [(p:extLst) (remake-pptx:presentation self #:extension (xml-element->extension-list-modify child))]
+             (if (not lstStyle) self (remake-pptx:presentation self #:defaultTextStyle lstStyle)))]
+          [(p:extLst) (remake-pptx:presentation self #:extLst (xml-element->extension-list-modify child))]
           [else self])))
 
     (when (and (not self)
-               (eq? (pptx:presentation-notes-size self)
-                    default-positive-2dsize))
+               (eq? (pptx:presentation-notesSz self)
+                    default-positive-size2d))
       (raise-xml-missing-element-error (car root) 'notesSz))
     
     self))

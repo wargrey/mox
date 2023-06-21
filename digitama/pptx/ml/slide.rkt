@@ -7,12 +7,13 @@
 (require "../../drawing/ml/main.rkt")
 
 (require "pml.rkt")
+(require "cSld.rkt")
 (require "extLst.rkt")
 
 (require "../../drawing/ml/main/clrMap.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define default-slide : PPTX:Slide (make-pptx:slide))
+(define default-slide : PPTX:Slide (make-pptx:slide #:cSld default-common-slide-data))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define xml-document->slide/text : (-> XML-Document PPTX:Slide)
@@ -26,8 +27,8 @@
       (case (car child)
         [(p:clrMapOvr)
          (let ([clrMap (xml-element->color-map-override child)])
-           (if (not clrMap) self (remake-pptx:slide self #:color-map clrMap)))]
-        [(p:extLst) (remake-pptx:slide self #:extension (xml-element->extension-list-modify child))]
+           (if (not clrMap) self (remake-pptx:slide self #:clrMapOvr clrMap)))]
+        [(p:extLst) (remake-pptx:slide self #:extLst (xml-element->extension-list-modify child))]
         #;[(or (not self) (eq? (pptx-presentation-notes-size self) default-positive-2dsize)) (raise-xml-missing-element-error (car root) 'notesSz)]
         [else self]))))
 

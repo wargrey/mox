@@ -3,8 +3,6 @@
 (provide (all-defined-out))
 (provide (all-from-out sgml/digitama/plain/datatype))
 (provide (rename-out [xml:attr-value->string mox:attr-value->lang]
-                     [xml:attr-value->index xml:attr-value->drawing-element-id]
-                     [xml:attr-value->index xml:attr-value->style-matrix-column-index]
                      [xml:attr-value->symbol mox:attr-value->relationship-id]))
 
 (require sgml/digitama/plain/datatype)

@@ -19,7 +19,7 @@
               ([child (in-list (caddr lstStyle))] #:when (list? child))
       (if (eq? (car child) 'a:extLst)
           (let ([extLst (xml-element->art-extension-list child)])
-            (remake-mox:text-list-style #:extension extLst
+            (remake-mox:text-list-style #:extLst extLst
                                         (or self default-text-list-style)))
           (let ([pPr (xml-element->text-paragraph-property child)])
             (cond [(not pPr) self]
@@ -43,7 +43,7 @@
          (let ([extLst (xml-element->art-extension-list child)])
            (cond [(not extLst) self]
                  [else (remake-mox:text-paragraph-property (or self default-text-paragraph-property)
-                                                           #:extension extLst)]))]
+                                                           #:extLst extLst)]))]
         [else self]))))
 
 (define xml-element->text-character-property : (-> XML-Element (Option MOX:Text-Character-Property))

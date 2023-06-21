@@ -8,8 +8,8 @@
 (require "../../../shared/ml/common-simple-types.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type MOX-Line-Fill-Property (U MOX:None-Fill MOX:Solid-Fill MOX:Gradient-Fill MOX:Pattern-Fill))
-(define-type MOX-Fill-Property (U MOX-Line-Fill-Property MOX:Group-Fill MOX:Blip-Fill))
+(define-type MOX-Line-Fill-Property (U 'none MOX:Solid-Fill MOX:Gradient-Fill MOX:Pattern-Fill))
+(define-type MOX-Fill-Property (U 'group MOX-Line-Fill-Property MOX:Blip-Fill))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element none-fill #:for mox ())
@@ -24,7 +24,3 @@
   ([dpi : Index #:= #false #:<-> xml:attr-value->index]
    [rotWithShape : XML-Boolean #:= #false #:<-> xml:attr-value->boolean])
   ())
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-none-fill-singleton : MOX:None-Fill (mox:none-fill))
-(define mox-group-fill-singleton : MOX:Group-Fill (mox:group-fill))

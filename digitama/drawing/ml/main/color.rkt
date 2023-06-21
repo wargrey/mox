@@ -7,6 +7,7 @@
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")
 
+(require "base.rkt")
 (require "extension.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,19 +52,6 @@
              salmon sandyBrown seaGreen seaShell sienna silver skyBlue slateBlue slateGray slateGrey
              snow springGreen steelBlue tan teal thistle tomato turquoise violet wheat white whiteSmoke
              yellow yellowGreen])
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox:attr-value->angle : (XML-Attribute-Value->Datum (Option Fixnum))
-  (lambda [v]
-    (xml:attr-value->fixnum v)))
-
-(define mox:attr-value->fixed-angle : (XML-Attribute-Value->Datum (Option Fixnum))
-  (lambda [v]
-    (xml:attr-value->fixnum v -5400000 5400000)))
-
-(define mox:attr-value+>fixed-angle : (XML-Attribute-Value->Datum (Option Index))
-  (lambda [v]
-    (xml:attr-value->index v 0 21600000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-attribute scrgb-color #:for mox #:-> mox-color-attribute
