@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-(require sgml/digitama/plain/grammar)
+(require sgml/digitama/xexpr/grammar)
 
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")

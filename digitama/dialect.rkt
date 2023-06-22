@@ -1,15 +1,15 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide (all-from-out sgml/digitama/plain/dialect))
+(provide (all-from-out sgml/digitama/xexpr/dialect))
 
 (require racket/symbol)
 
 (require digimon/syntax)
 (require digimon/struct)
 
-(require sgml/digitama/plain/dialect)
-(require sgml/digitama/plain/grammar)
+(require sgml/digitama/xexpr/dialect)
+(require sgml/digitama/xexpr/grammar)
 
 (require (for-syntax syntax/parse))
 (require (for-syntax racket/string))
@@ -40,6 +40,7 @@
                    #:defaults ([(attr-defs 1) null]))
         (field-defs ...))
      (with-syntax* ([(elem Elem) (racket->mox:elem-names #'x #'id)]
+                    [(src) (list (format-id #'id "src"))]
                     [(xmlns attlist) (list (format-id #'id "xmlns") (format-id #'id "attlist"))]
                     [(mox:attr MOX:Attr extract-attr attr->xexpr) (racket->mox:attr-names #'x #'id)]
                     [(AttlistType defattr ...) (if (attribute mandatory) (list #'MOX:Attr) (list #'(Option MOX:Attr) #'#false))]
@@ -48,7 +49,7 @@
                     [define-attr (if (attribute kw-attlist) #'(define-mox-attribute id #:for x #:-> parent (attr-defs ...)) #'(void))])
        (syntax/loc stx
          (begin define-attr
-                (define-struct elem : Elem (defs-for-root ... defs-for-attr ... field-defs ...) #:transparent))))]))
+                (define-struct elem : Elem ([src : Any #false] defs-for-root ... defs-for-attr ... field-defs ...) #:transparent))))]))
 
 (define-syntax (define-mox-attribute stx)
   (syntax-parse stx #:literals [:]

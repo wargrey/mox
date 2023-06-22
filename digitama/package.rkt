@@ -5,7 +5,7 @@
 (require racket/port)
 
 (require digimon/archive)
-(require sgml/digitama/plain/sax)
+(require sgml/digitama/xexpr/sax)
 
 (require typed/racket/unsafe)
 

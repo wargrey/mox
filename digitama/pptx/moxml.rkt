@@ -69,8 +69,8 @@
                  (set-box! &slds
                            (let* ([slide.xml (xml-document-normalize (read-xml-document /dev/pkgin))]
                                   [self (case pkg-type
-                                         [(text) (xml-document->slide/text slide.xml)]
-                                         [else (xml-document->slide slide.xml)])])
+                                          [(text) (xml-document->slide/text slide.xml)]
+                                          [else (xml-document->slide slide.xml)])])
                              (cons self (unbox &slds))))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml)
                  (set-box! &sldLayouts (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &sldLayouts)))]
@@ -78,8 +78,8 @@
                  (set-box! &sldMasters
                            (let* ([slide.xml (xml-document-normalize (read-xml-document /dev/pkgin))]
                                   [self (case pkg-type
-                                         [(text) (xml-document->slide-master/text slide.xml)]
-                                         [else (xml-document->slide-master slide.xml)])])
+                                          [(text) (xml-document->slide-master/text slide.xml)]
+                                          [else (xml-document->slide-master slide.xml)])])
                              (cons self (unbox &sldMasters))))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.tags+xml)
                  (set-box! &tagLst (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &tagLst)))]

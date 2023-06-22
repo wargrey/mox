@@ -3,8 +3,8 @@
 (provide (all-defined-out))
 
 (require sgml/digitama/namespace)
-(require sgml/digitama/plain/datatype)
-(require sgml/digitama/plain/sax)
+(require sgml/digitama/xexpr/datatype)
+(require sgml/digitama/xexpr/sax)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-File-Properties (HashTable Symbol String))

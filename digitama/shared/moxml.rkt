@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-(require sgml/digitama/plain/sax)
+(require sgml/digitama/xexpr/sax)
 
 (require "property.rkt")
 

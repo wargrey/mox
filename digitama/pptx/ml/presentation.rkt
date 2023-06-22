@@ -24,8 +24,10 @@
       (for/fold ([self : PPTX:Presentation (remake-pptx:presentation default-presentation #:xmlns ns #:attlist pattr)])
                 ([child (in-list (caddr root))] #:when (list? child))
         (case (car child)
-          [(p:sldMasterIdLst) (remake-pptx:presentation self #:sldMasterIdLst (xml-element->slide-master-entries child))]
-          [(p:sldIdLst) (remake-pptx:presentation self #:sldIdLst (xml-element->slide-entries child))]
+          [(p:sldMasterIdLst)
+           (remake-pptx:presentation self #:sldMasterIdLst (xml-empty-children->list child extract-pptx#slide-master-entry))]
+          [(p:sldIdLst)
+           (remake-pptx:presentation self #:sldIdLst (xml-empty-children->list child extract-pptx#slide-entry))]
           [(p:sldSz)
            (let-values ([(sldsz _) (extract-pptx#slide-size (cadr child) (car child))])
              (remake-pptx:presentation self #:sldSz sldsz))]
@@ -48,20 +50,3 @@
 (define xml-document->presentation : (-> XML-Document PPTX:Presentation)
   (lambda [presentation.xml]
     (xml-document->presentation/text presentation.xml)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define xml-element->slide-master-entries : (-> XML-Element (Listof PPTX#Slide-Master-Entry))
-  (lambda [sldMasterIdLst]
-    (reverse
-     (for/fold ([seirtne : (Listof PPTX#Slide-Master-Entry) null])
-               ([child (in-list (caddr sldMasterIdLst))] #:when (list? child))
-       (let-values ([(entry _) (extract-pptx#slide-master-entry (cadr child) (car child))])
-         (cons entry seirtne))))))
-
-(define xml-element->slide-entries : (-> XML-Element (Listof PPTX#Slide-Entry))
-  (lambda [sldIdLst]
-    (reverse
-     (for/fold ([seirtne : (Listof PPTX#Slide-Entry) null])
-               ([child (in-list (caddr sldIdLst))] #:when (list? child))
-       (let-values ([(entry _) (extract-pptx#slide-entry (cadr child) (car child))])
-         (cons entry seirtne))))))

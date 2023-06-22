@@ -1,11 +1,11 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide (all-from-out sgml/digitama/plain/datatype))
+(provide (all-from-out sgml/digitama/xexpr/datatype))
 (provide (rename-out [xml:attr-value->string mox:attr-value->lang]
                      [xml:attr-value->symbol mox:attr-value->relationship-id]))
 
-(require sgml/digitama/plain/datatype)
+(require sgml/digitama/xexpr/datatype)
 
 ;;; WARNING: RNC might be wrong
 
