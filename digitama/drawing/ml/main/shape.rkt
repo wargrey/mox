@@ -55,6 +55,61 @@
   ([id : Index #:<-> xml:attr-value->drawing-element-id]
    [idx : Index #:<-> xml:attr-value->index]))
 
+(define-mox-attribute shape-locking #:for mox
+  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noEditPoints : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noAdjustHandles : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeArrowheads : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeShapeType : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noTextEdit : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
+
+(define-mox-attribute group-shape-locking #:for mox
+  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noUngrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
+
+(define-mox-attribute connector-locking #:for mox
+  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noEditPoints : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noAdjustHandles : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeArrowheads : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeShapeType : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
+
+(define-mox-attribute graphical-object-frame-locking #:for mox
+  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noDrilldown : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
+
+(define-mox-attribute picture-locking #:for mox
+  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noEditPoints : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noAdjustHandles : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeArrowheads : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noChangeShapeType : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
+   [noCrop : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element hyperlink #:for mox
   #:attlist
@@ -68,71 +123,6 @@
    [endSnd : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
   ([snd : (Option MOX#Embedded-File) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
-
-(define-mox-element shape-locking #:for mox
-  #:attlist
-  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noEditPoints : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noAdjustHandles : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeArrowheads : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeShapeType : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noTextEdit : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extLst : (Option MOX:Office-Art-Extension-List) #false]))
-
-(define-mox-element group-shape-locking #:for mox
-  #:attlist
-  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noUngrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extLst : (Option MOX:Office-Art-Extension-List) #false]))
-
-(define-mox-element connector-locking #:for mox
-  #:attlist
-  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noEditPoints : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noAdjustHandles : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeArrowheads : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeShapeType : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extLst : (Option MOX:Office-Art-Extension-List) #false]))
-
-(define-mox-element graphical-object-frame-locking #:for mox
-  #:attlist
-  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noDrilldown : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extLst : (Option MOX:Office-Art-Extension-List) #false]))
-
-(define-mox-element picture-locking #:for mox
-  #:attlist
-  ([noGrp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noSelect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noRot : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeAspect : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noMove : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noResize : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noEditPoints : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noAdjustHandles : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeArrowheads : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noChangeShapeType : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [noCrop : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element transform2d #:for mox
   #:attlist
@@ -182,31 +172,31 @@
    [hidden : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
    [title : String #:= #false #:<-> xml:attr-value->string])
   ([hlinkClick : (Option MOX:Hyperlink) #false]
-   [hlinlHover : (Option MOX:Hyperlink) #false]
+   [hlinkHover : (Option MOX:Hyperlink) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-shape-property #:for mox
   #:attlist
   ([txBox : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([spLocks : (Option MOX:Shape-Locking) #false]
+  ([spLocks : (Option (MOX-Art-Extension-With MOX#Shape-Locking)) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-group-shape-property #:for mox
-  ([spLocks : (Option MOX:Group-Shape-Locking) #false]
+  ([grpSpLocks : (Option (MOX-Art-Extension-With MOX#Group-Shape-Locking)) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-graphic-frame-property #:for mox
-  ([graphicFrameLocks : (Option MOX:Graphical-Object-Frame-Locking) #false]
+  ([graphicFrameLocks : (Option (MOX-Art-Extension-With MOX#Graphical-Object-Frame-Locking)) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-picture-property #:for mox
   #:attlist
   ([preferRelativeResize : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean])
-  ([picLocks : (Option MOX:Graphical-Object-Frame-Locking) #false]
+  ([picLocks : (Option (MOX-Art-Extension-With MOX#Graphical-Object-Frame-Locking)) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-connector-property #:for mox
-  ([cxnSpLocks : (Option MOX:Connector-Locking) #false]
+  ([cxnSpLocks : (Option (MOX-Art-Extension-With MOX#Connector-Locking)) #false]
    [stCxn : (Option MOX#Connection) #false]
    [endCxn : (Option MOX#Connection) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))

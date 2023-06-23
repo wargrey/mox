@@ -12,9 +12,6 @@
 (define-type MOX-Fill-Property (U 'group MOX-Line-Fill-Property MOX:Blip-Fill))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-mox-element none-fill #:for mox ())
-(define-mox-element group-fill #:for mox ())
-
 (define-mox-element solid-fill #:for mox ())
 (define-mox-element gradient-fill #:for mox ())
 (define-mox-element pattern-fill #:for mox ())

@@ -1,6 +1,6 @@
 #lang typed/racket/base
 
-(provide (all-defined-out))
+(provide (all-defined-out) XML-Attribute-Extract)
 (provide (all-from-out sgml/digitama/xexpr/dialect))
 
 (require racket/symbol)
@@ -29,21 +29,27 @@
         (format-id <a> "extract-~a#~a" prefix attrib)
         (format-id <a> "~a#~a->xml-attributes" prefix attrib)))
 
+(define-for-syntax (has-mandatory-attribute? <attr-defs>)
+  (define attr-defs (syntax-e <attr-defs>))
+  (for/or ([<def> (in-list (syntax-e <attr-defs>))])
+    (define maybe-default (memq '#:= (syntax->datum <def>)))
+    (or (not maybe-default)
+        (null? (cdr maybe-default))
+        (null? (cadr maybe-default)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-syntax (define-mox-element stx)
   (syntax-parse stx #:literals [:]
     [(_ (~optional (~seq (~and #:root kw-root))) id #:for x
         (~optional (~seq #:-> parent) #:defaults ([parent #'mox-attribute]))
-        (~optional (~seq (~and #:attlist kw-attlist)
-                         (~optional (~seq (~and #:mandatory mandatory)))
-                         (attr-defs ...))
+        (~optional (~seq (~and #:attlist kw-attlist) (attr-defs ...))
                    #:defaults ([(attr-defs 1) null]))
         (field-defs ...))
      (with-syntax* ([(elem Elem) (racket->mox:elem-names #'x #'id)]
                     [(src) (list (format-id #'id "src"))]
                     [(xmlns attlist) (list (format-id #'id "xmlns") (format-id #'id "attlist"))]
                     [(mox:attr MOX:Attr extract-attr attr->xexpr) (racket->mox:attr-names #'x #'id)]
-                    [(AttlistType defattr ...) (if (attribute mandatory) (list #'MOX:Attr) (list #'(Option MOX:Attr) #'#false))]
+                    [(AttlistType defattr ...) (if (has-mandatory-attribute? #'(attr-defs ...)) (list #'MOX:Attr) (list #'(Option MOX:Attr) #'#false))]
                     [(defs-for-root ...) (if (attribute kw-root) (list #'[xmlns : XML-Namespaces null]) null)]
                     [(defs-for-attr ...) (if (null? (syntax-e #'[attr-defs ...])) null (list #'[attlist : AttlistType defattr ...]))]
                     [define-attr (if (attribute kw-attlist) #'(define-mox-attribute id #:for x #:-> parent (attr-defs ...)) #'(void))])

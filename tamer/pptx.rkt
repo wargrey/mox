@@ -13,6 +13,6 @@
 
 (define powerpoint.ml (mox-self pptx.zip))
 
-(mox-powerpoint-presentation powerpoint.ml)
+#;(mox-powerpoint-presentation powerpoint.ml)
 (mox-powerpoint-slide-masters powerpoint.ml)
-(mox-powerpoint-slides powerpoint.ml)
+#;(mox-powerpoint-slides powerpoint.ml)

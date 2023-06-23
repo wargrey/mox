@@ -7,6 +7,8 @@
 (require "../../shared/ml/common-simple-types.rkt")
 (require "../../drawing/ml/main.rkt")
 
+(require "extension.rkt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type PPTX-Background (U PPTX:Background-Property MOX:Style-Matrix-Reference))
 (define-type PPTX-Shape (U PPTX:Shape PPTX:Group-Shape PPTX:Picture
@@ -67,10 +69,14 @@
 (define-mox-attribute content-part #:for pptx
   ([r:id : Symbol #:<-> mox:attr-value->relationship-id]))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-mox-element extension-list #:for pptx ())
-(define-mox-element extension-list-modify #:for pptx ())
+(define-mox-attribute placeholder #:for pptx
+  ([type : Placeholder-Type #:= [#false 'obj] #:<-> pptx:attr-value->placeholder-type]
+   [orient : Direction #:= [#false 'horz] #:<-> pptx:attr-value->direction]
+   [sz : Placeholder-Size #:= [#false 'full] #:<-> pptx:attr-value->placeholder-size]
+   [idx : Index #:= [#false 0] #:<-> xml:attr-value->index]
+   [hasCustomPromp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element background-property #:for pptx
   #:attlist
   ([shadeToTitle : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
@@ -82,20 +88,11 @@
   ([bwMode : Black-White-Mode #:= [#false 'white] #:<-> mox:attr-value->black-white-mode])
   ([bg : PPTX-Background]))
 
-(define-mox-element placeholder #:for pptx
-  #:attlist
-  ([type : Placeholder-Type #:= [#false 'obj] #:<-> pptx:attr-value->placeholder-type]
-   [orient : Direction #:= [#false 'horz] #:<-> pptx:attr-value->direction]
-   [sz : Placeholder-Size #:= [#false 'full] #:<-> pptx:attr-value->placeholder-size]
-   [idx : Index #:= [#false 0] #:<-> xml:attr-value->index]
-   [hasCustomPromp : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([extLst : (Option PPTX:Extension-List-Modify) #false]))
-
 (define-mox-element nvisual-application-property #:for pptx
   #:attlist
   ([isPhoto : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
    [useDrawn : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([ph : (Option PPTX:Placeholder) #false]
+  ([ph : (Option (PPTX-Extension-Modify-With PPTX#Placeholder)) #false]
    [media : (Option MOX-Media) #false]
    [extLst : (Option PPTX:Extension-List) #false]))
 
@@ -111,7 +108,7 @@
 (define-mox-element group-shape #:for pptx
   ([nvGrpSpPr : (PPTX-NVisual-Property MOX:Nvisual-Group-Shape-Property)]
    [grpSpPr : MOX:Group-Shape-Property]
-   [shapes : (Listof PPTX-Shape) null]
+   [children : (Listof PPTX-Shape) null]
    [extLst : (Option PPTX:Extension-List-Modify) #false]))
 
 (define-mox-element graphical-object-frame #:for pptx

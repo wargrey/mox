@@ -4,8 +4,11 @@
 
 (require sgml/xexpr)
 
-(require "main.rkt")
-(require "main/ext/office-art.rkt")
+(require "main/text.rkt")
+
+(require "Hyperlink.rkt")
+(require "FillProps.rkt")
+(require "extLst.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define default-text-list-style : MOX:Text-List-Style (make-mox:text-list-style))
@@ -15,41 +18,59 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define xml-element->text-list-style : (-> XML-Element (Option MOX:Text-List-Style))
   (lambda [lstStyle]
-    (for/fold ([self : (Option MOX:Text-List-Style) #false])
-              ([child (in-list (caddr lstStyle))] #:when (list? child))
-      (if (eq? (car child) 'a:extLst)
-          (let ([extLst (xml-element->art-extension-list child)])
-            (remake-mox:text-list-style #:extLst extLst
-                                        (or self default-text-list-style)))
-          (let ([pPr (xml-element->text-paragraph-property child)])
-            (cond [(not pPr) self]
-                  [else (lstStyle-set (or self default-text-list-style)
-                                      (car child) pPr)]))))))
+    (xml-children-filter-fold lstStyle mox-text-list-style-fold #false)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define mox-text-list-style-fold : (XML-Children-Filter-Fold (Option MOX:Text-List-Style))
+  (lambda [child self parent]
+    (if (eq? (car child) 'a:extLst)
+        (remake-mox:text-list-style #:extLst (xml-element->art-extension-list child)
+                                    (or self default-text-list-style))
+        (let ([pPr (xml-element->text-paragraph-property child)])
+          (and pPr (lstStyle-set (or self default-text-list-style)
+                                 (car child) pPr))))))
+
+(define mox-text-paragraph-property-fold : (XML-Children-Filter-Fold (Option MOX:Text-Paragraph-Property))
+  (lambda [child self parent]
+    (case (car child)
+      [(a:defRPr)
+       (let ([rPr (xml-element->text-character-property child)])
+         (and rPr (remake-mox:text-paragraph-property #:defRPr rPr
+                                                      (or self default-text-paragraph-property))))]
+      [(a:extLst)
+       (remake-mox:text-paragraph-property #:extLst (xml-element->art-extension-list child)
+                                           (or self default-text-paragraph-property))]
+      [else self])))
+
+(define mox-text-character-property-fold : (XML-Children-Filter-Fold (Option MOX:Text-Character-Property))
+  (lambda [child self parent]
+    (case (car child)
+      #;[(a:hlinkClick)
+       (remake-mox:text-character-property #:hlinkClick (xml-element->hyperlink child)
+                                           (or self default-text-character-property))]
+      #;[(a:hlinkMouseOver)
+       (remake-mox:text-character-property #:hlinkMouseOver (xml-element->hyperlink child)
+                                           (or self default-text-character-property))]
+      [(a:extLst)
+       (remake-mox:text-character-property #:extLst (xml-element->art-extension-list child)
+                                           (or self default-text-character-property))]
+      [else (cond [(xml-element->fill-property child)
+                   => (λ [fill] (remake-mox:text-character-property #:fill fill
+                                                                    (or self default-text-character-property)))]
+                  [else #false])])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define xml-element->text-paragraph-property : (-> XML-Element (Option MOX:Text-Paragraph-Property))
   (lambda [pPr]
     (define-values (palst rest) (extract-mox#text-paragraph-property (cadr pPr) (car pPr)))
-    (for/fold ([self : (Option MOX:Text-Paragraph-Property)
-                     (and palst (remake-mox:text-paragraph-property #:attlist palst
-                                                                    default-text-paragraph-property))])
-              ([child (in-list (caddr pPr))] #:when (list? child))
-      (case (car child)
-        [(a:defRPr)
-         (let ([rPr (xml-element->text-character-property child)])
-           (cond [(not rPr) self]
-                 [else (remake-mox:text-paragraph-property (or self default-text-paragraph-property)
-                                                           #:defRPr rPr)]))]
-        [(a:extLst)
-         (let ([extLst (xml-element->art-extension-list child)])
-           (cond [(not extLst) self]
-                 [else (remake-mox:text-paragraph-property (or self default-text-paragraph-property)
-                                                           #:extLst extLst)]))]
-        [else self]))))
+    (xml-children-filter-fold pPr mox-text-paragraph-property-fold
+                              (and palst (make-mox:text-paragraph-property #:attlist palst)))))
 
 (define xml-element->text-character-property : (-> XML-Element (Option MOX:Text-Character-Property))
   (lambda [rPr]
     (define-values (ralst rest) (extract-mox#text-character-property (cadr rPr) (car rPr)))
-    (and ralst (remake-mox:text-character-property default-text-character-property #:attlist ralst))))
+    (xml-children-filter-fold rPr mox-text-character-property-fold
+                              (and ralst (make-mox:text-character-property #:attlist ralst)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define lstStyle-set : (-> MOX:Text-List-Style Symbol MOX:Text-Paragraph-Property MOX:Text-List-Style)

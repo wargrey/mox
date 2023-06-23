@@ -8,6 +8,8 @@
 (require "../../../shared/ml/common-simple-types.rkt")
 
 (require "base.rkt")
+(require "fill.rkt")
+(require "hyperlink.rkt")
 (require "geometry.rkt")
 (require "extension.rkt")
 
@@ -103,7 +105,10 @@
    [smtClean : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
    [smtId : Index #:= [#false 0] #:<-> xml:attr-value->index]
    [bmk : String #:= #false #:<-> xml:attr-value->string])
-  ([extLst : (Option MOX:Office-Art-Extension-List) #false]))
+  ([fill : (Option MOX-Fill-Property) #false]
+   ;[hlinkClick : (Option MOX:Hyperlink) #false]
+   ;[hlinkMouseOver : (Option MOX:Hyperlink) #false]
+   [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element text-paragraph-property #:for mox
   #:attlist

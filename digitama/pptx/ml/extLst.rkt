@@ -4,7 +4,7 @@
 
 (require sgml/xexpr)
 
-(require "pml.rkt")
+(require "extension.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define default-extension-list : PPTX:Extension-List (make-pptx:extension-list))
@@ -18,3 +18,30 @@
 (define xml-element->extension-list-modify : (-> XML-Element PPTX:Extension-List-Modify)
   (lambda [extLst]
     default-modify-extension-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define #:forall (A) xml-element->attribute+extension-list
+  : (-> XML-Element (XML-Attribute-Extract A) (Option (PPTX-Extension-With A)))
+  (lambda [child extract-attribute]
+    (define-values (attlist _) (extract-attribute (cadr child) (car child)))
+    (define extLst : (Option PPTX:Extension-List)
+      (for/or ([extLst (in-list (caddr child))])
+        (and (list? extLst)
+             (eq? (car extLst) 'p:extLst)
+             (xml-element->extension-list extLst))))
+
+    (and (or attlist extLst)
+         (mox+extension attlist extLst))))
+
+(define #:forall (A) xml-element->attribute+extension-list-modify
+  : (-> XML-Element (XML-Attribute-Extract A) (Option (PPTX-Extension-Modify-With A)))
+  (lambda [child extract-attribute]
+    (define-values (attlist _) (extract-attribute (cadr child) (car child)))
+    (define extLst : (Option PPTX:Extension-List-Modify)
+      (for/or ([extLst (in-list (caddr child))])
+        (and (list? extLst)
+             (eq? (car extLst) 'p:extLst)
+             (xml-element->extension-list-modify extLst))))
+
+    (and (or attlist extLst)
+         (mox+extension attlist extLst))))

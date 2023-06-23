@@ -4,14 +4,12 @@
 
 (require sgml/xexpr)
 
-(require "../../../drawing/ml/main.rkt")
 (require "../../../drawing/ml/lstStyle.rkt")
+(require "../../../drawing/ml/clrMap.rkt")
 
 (require "../pml.rkt")
 (require "../cSld.rkt")
 (require "../extLst.rkt")
-
-(require "../../../drawing/ml/main/clrMap.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define default-text-styles : PPTX:Slide-Master-Text-Styles (make-pptx:slide-master-text-styles))
@@ -26,47 +24,49 @@
     (define-values (ns rest) (xml-attributes-extract-xmlns (cadr root)))
     (define-values (prvr _) (extract-pptx#slide-master rest (car root)))
 
-    (for/fold ([self : PPTX:Slide-Master (remake-pptx:slide-master default-slide-master #:src master.xml #:xmlns ns #:attlist prvr)])
-              ([child (in-list (caddr root))] #:when (list? child))
-      (case (car child)
-        [(p:sldLayoutIdLst)
-         (remake-pptx:slide-master self #:sldLayoutIdLst (xml-empty-children->list child extract-pptx#slide-layout-entry))]
-        [(p:clrMap)
-         (remake-pptx:slide-master self #:clrMap (xml-element->color-map child))]
-        [(p:extLst)
-         (remake-pptx:slide-master self #:extLst (xml-element->extension-list-modify child))]
-        [(p:txStyles)
-         (let ([txStyles (xml-element->slide-master-text-styles child)])
-           (if txStyles (remake-pptx:slide-master self #:txStyles txStyles) self))]
-        #;[(or (not self) (eq? (pptx-presentation-notes-size self) default-positive-2dsize)) (raise-xml-missing-element-error (car root) 'notesSz)]
-        [else self]))))
+    (xml-children-fold root mox-slide-master-fold
+                       (remake-pptx:slide-master #:xmlns ns #:attlist prvr
+                                                 default-slide-master))))
 
 (define xml-document->slide-master : (-> XML-Document PPTX:Slide-Master)
   (lambda [master.xml]
     (xml-document->slide-master/text master.xml)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define xml-element->slide-master-text-styles : (-> XML-Element (Option PPTX:Slide-Master-Text-Styles))
-  (lambda [txStyles]
-    (for/fold ([self : (Option PPTX:Slide-Master-Text-Styles) #false])
-              ([child (caddr txStyles)] #:when (list? child))
-      (case (car child)
-        [(a:titleStyle)
-         (let ([lstStyle (xml-element->text-list-style child)])
-           (cond [(not lstStyle) self]
-                 [else (remake-pptx:slide-master-text-styles #:titleStyle lstStyle
-                                                             (or self default-text-styles))]))]
-        [(a:bodyStyle)
-         (let ([lstStyle (xml-element->text-list-style child)])
-           (cond [(not lstStyle) self]
-                 [else (remake-pptx:slide-master-text-styles #:bodyStyle lstStyle
-                                                             (or self default-text-styles))]))]
-        [(a:other)
-         (let ([lstStyle (xml-element->text-list-style child)])
-           (cond [(not lstStyle) self]
-                 [else (remake-pptx:slide-master-text-styles #:otherStyle lstStyle
-                                                             (or self default-text-styles))]))]
-        [(p:extLst)
-         (remake-pptx:slide-master-text-styles #:extLst (xml-element->extension-list child)
-                                               (or self default-text-styles))]
-        [else self]))))
+(define mox-slide-master-fold : (XML-Children-Fold PPTX:Slide-Master)
+  (lambda [child self root]
+    (case (car child)
+      [(p:cSld)
+       (remake-pptx:slide-master self #:cSld (xml-element->common-slide-data child))]
+      [(p:sldLayoutIdLst)
+       (remake-pptx:slide-master self #:sldLayoutIdLst (xml-empty-children-map child extract-pptx#slide-layout-entry))]
+      [(p:clrMap)
+       (remake-pptx:slide-master self #:clrMap (xml-element->color-map child))]
+      [(p:extLst)
+       (remake-pptx:slide-master self #:extLst (xml-element->extension-list-modify child))]
+      [(p:txStyles)
+       (remake-pptx:slide-master self #:txStyles (xml-children-filter-fold child mox-slide-master-text-styles-fold #false))]
+      [else self])))
+  
+(define mox-slide-master-text-styles-fold : (XML-Children-Fold (Option PPTX:Slide-Master-Text-Styles))
+  (lambda [child self parent]
+    (case (car child)
+      [(p:titleStyle)
+       (let ([lstStyle (xml-element->text-list-style child)])
+         (and lstStyle
+              (remake-pptx:slide-master-text-styles #:titleStyle lstStyle
+                                                    (or self default-text-styles))))]
+      [(p:bodyStyle)
+       (let ([lstStyle (xml-element->text-list-style child)])
+         (and lstStyle
+              (remake-pptx:slide-master-text-styles #:bodyStyle lstStyle
+                                                    (or self default-text-styles))))]
+      [(p:otherStyle)
+       (let ([lstStyle (xml-element->text-list-style child)])
+         (and lstStyle
+              (remake-pptx:slide-master-text-styles #:otherStyle lstStyle
+                                                    (or self default-text-styles))))]
+      [(p:extLst)
+       (remake-pptx:slide-master-text-styles #:extLst (xml-element->extension-list child)
+                                             (or self default-text-styles))]
+      [else self])))
