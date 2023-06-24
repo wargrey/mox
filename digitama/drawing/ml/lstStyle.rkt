@@ -45,10 +45,10 @@
 (define mox-text-character-property-fold : (XML-Children-Filter-Fold (Option MOX:Text-Character-Property))
   (lambda [child self parent]
     (case (car child)
-      #;[(a:hlinkClick)
+      [(a:hlinkClick)
        (remake-mox:text-character-property #:hlinkClick (xml-element->hyperlink child)
                                            (or self default-text-character-property))]
-      #;[(a:hlinkMouseOver)
+      [(a:hlinkMouseOver)
        (remake-mox:text-character-property #:hlinkMouseOver (xml-element->hyperlink child)
                                            (or self default-text-character-property))]
       [(a:extLst)

@@ -4,11 +4,12 @@
 
 (require sgml/xexpr)
 
+(require "../../dialect.rkt")
 (require "extension.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define default-extension-list : PPTX:Extension-List (make-pptx:extension-list))
-(define default-modify-extension-list : PPTX:Extension-List-Modify (make-pptx:extension-list-modify))
+(define default-extension-list (make-pptx:extension-list))
+(define default-modify-extension-list (make-pptx:extension-list-modify))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define xml-element->extension-list : (-> XML-Element PPTX:Extension-List)
@@ -21,7 +22,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #:forall (A) xml-element->attribute+extension-list
-  : (-> XML-Element (XML-Attribute-Extract A) (Option (PPTX-Extension-With A)))
+  : (case-> [XML-Element (XML-Attribute-Extract (∩ A MOX-Attribute)) -> (PPTX-Extension-With A)]
+            [XML-Element (XML-Attribute-Extract A) -> (Option (PPTX-Extension-With A))])
   (lambda [child extract-attribute]
     (define-values (attlist _) (extract-attribute (cadr child) (car child)))
     (define extLst : (Option PPTX:Extension-List)
@@ -34,7 +36,8 @@
          (mox+extension attlist extLst))))
 
 (define #:forall (A) xml-element->attribute+extension-list-modify
-  : (-> XML-Element (XML-Attribute-Extract A) (Option (PPTX-Extension-Modify-With A)))
+  : (case-> [XML-Element (XML-Attribute-Extract (∩ A MOX-Attribute)) -> (PPTX-Extension-Modify-With A)]
+            [XML-Element (XML-Attribute-Extract A) -> (Option (PPTX-Extension-Modify-With A))])
   (lambda [child extract-attribute]
     (define-values (attlist _) (extract-attribute (cadr child) (car child)))
     (define extLst : (Option PPTX:Extension-List-Modify)

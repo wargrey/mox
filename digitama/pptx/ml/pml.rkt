@@ -92,7 +92,7 @@
   #:attlist
   ([isPhoto : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
    [useDrawn : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([ph : (Option (PPTX-Extension-Modify-With PPTX#Placeholder)) #false]
+  ([ph : (Option (PPTX-Extension-Modify-With (Option PPTX#Placeholder))) #false]
    [media : (Option MOX-Media) #false]
    [extLst : (Option PPTX:Extension-List) #false]))
 

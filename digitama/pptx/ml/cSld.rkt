@@ -7,6 +7,7 @@
 (require "../../drawing/ml/main/shape.rkt")
 
 (require "../../drawing/ml/SpPr.rkt")
+(require "../../drawing/ml/MediaFile.rkt")
 
 (require "pml.rkt")
 (require "extLst.rkt")
@@ -61,7 +62,8 @@
          (and ph (remake-pptx:nvisual-application-property self #:ph ph)))]
       [(p:extLst)
        (remake-pptx:nvisual-application-property self #:extLst (xml-element->extension-list child))]
-      [else #false])))
+      [else (let ([mfile (xml-element->media-file child)])
+              (and mfile (remake-pptx:nvisual-application-property self #:media mfile)))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define xml-element->group-shape : (-> XML-Element PPTX:Group-Shape)

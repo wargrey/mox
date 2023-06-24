@@ -31,10 +31,11 @@
 (define-struct mox-audio-cd : MOX-Audio-CD
   ([st : MOX#Cd-Time]
    [end : MOX#Cd-Time]
-   [extension : (Option MOX:Office-Art-Extension-List) #false])
+   [extLst : (Option MOX:Office-Art-Extension-List) #false])
   #:transparent)
 
-(define-struct mox-audio-file : MOX-Audio-File
-  ([attlist : MOX#Mime-File]
-   [extension : (Option MOX:Office-Art-Extension-List) #false])
+(define-struct mox-media-file : MOX-Audio-File
+  ([type : Symbol]
+   [mime : MOX#Mime-File]
+   [extLst : (Option MOX:Office-Art-Extension-List) #false])
   #:transparent)

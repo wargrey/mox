@@ -8,7 +8,7 @@
 (define-type (MOX-Art-Extension-With D) (MOX+Extension D MOX:Office-Art-Extension-List))
 
 (struct (MOX Ext) mox+extension
-  ([datum : (Option MOX)]
+  ([datum : MOX]
    [extLst : (Option Ext)])
   #:type-name MOX+Extension
   #:transparent)

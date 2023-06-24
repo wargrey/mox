@@ -10,7 +10,7 @@
 (require "base.rkt")
 (require "line.rkt")
 (require "fill.rkt")
-(require "media.rkt")
+(require "hyperlink.rkt")
 (require "format.rkt")
 (require "extension.rkt")
 
@@ -111,19 +111,6 @@
    [noCrop : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-mox-element hyperlink #:for mox
-  #:attlist
-  ([r:id : Symbol #:<-> mox:attr-value->relationship-id]
-   [invalidUrl : String #:= #false #:<-> xml:attr-value->uri-string]
-   [action : String #:= #false #:<-> xml:attr-value->string]
-   [tgtFrame : String #:= #false #:<-> xml:attr-value->string]
-   [tooltip : String #:= #false #:<-> xml:attr-value->string]
-   [history : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
-   [highlightClick : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
-   [endSnd : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([snd : (Option MOX#Embedded-File) #false]
-   [extLst : (Option MOX:Office-Art-Extension-List) #false]))
-
 (define-mox-element transform2d #:for mox
   #:attlist
   ([rot : Fixnum #:= [#false 0] #:<-> mox:attr-value->angle]
@@ -178,25 +165,25 @@
 (define-mox-element nvisual-shape-property #:for mox
   #:attlist
   ([txBox : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean])
-  ([spLocks : (Option (MOX-Art-Extension-With MOX#Shape-Locking)) #false]
+  ([spLocks : (Option (MOX-Art-Extension-With (Option MOX#Shape-Locking))) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-group-shape-property #:for mox
-  ([grpSpLocks : (Option (MOX-Art-Extension-With MOX#Group-Shape-Locking)) #false]
+  ([grpSpLocks : (Option (MOX-Art-Extension-With (Option MOX#Group-Shape-Locking))) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-graphic-frame-property #:for mox
-  ([graphicFrameLocks : (Option (MOX-Art-Extension-With MOX#Graphical-Object-Frame-Locking)) #false]
+  ([graphicFrameLocks : (Option (MOX-Art-Extension-With (Option MOX#Graphical-Object-Frame-Locking))) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-picture-property #:for mox
   #:attlist
   ([preferRelativeResize : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean])
-  ([picLocks : (Option (MOX-Art-Extension-With MOX#Graphical-Object-Frame-Locking)) #false]
+  ([picLocks : (Option (MOX-Art-Extension-With (Option MOX#Graphical-Object-Frame-Locking))) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element nvisual-connector-property #:for mox
-  ([cxnSpLocks : (Option (MOX-Art-Extension-With MOX#Connector-Locking)) #false]
+  ([cxnSpLocks : (Option (MOX-Art-Extension-With (Option MOX#Connector-Locking))) #false]
    [stCxn : (Option MOX#Connection) #false]
    [endCxn : (Option MOX#Connection) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))

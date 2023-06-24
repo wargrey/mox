@@ -5,7 +5,6 @@
 (require sgml/xexpr)
 
 (require "../../dialect.rkt")
-
 (require "main/extension.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -16,8 +15,9 @@
   (lambda [extLst]
     default-art-extension-list))
 
-(define #:forall (A) xml-element->attribute+art-extension-list : (-> XML-Element (XML-Attribute-Extract A)
-                                                                     (Option (MOX-Art-Extension-With A)))
+(define #:forall (A) xml-element->attribute+art-extension-list
+  : (case-> [XML-Element (XML-Attribute-Extract (∩ A MOX-Attribute)) -> (MOX-Art-Extension-With A)]
+            [XML-Element (XML-Attribute-Extract A) -> (Option (MOX-Art-Extension-With A))])
   (lambda [child extract-attribute]
     (define-values (attlist _) (extract-attribute (cadr child) (car child)))
     (define extLst : (Option MOX:Office-Art-Extension-List)

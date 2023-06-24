@@ -5,8 +5,9 @@
 (require sgml/xexpr)
 
 (require "main/shape.rkt")
-(require "main/media.rkt")
+(require "main/hyperlink.rkt")
 
+(require "MediaFile.rkt")
 (require "extLst.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20,10 +21,6 @@
 (define mox-hyperlink-fold : (XML-Children-Filter-Fold MOX:Hyperlink)
   (lambda [child self parent]
     (case (car child)
-      [(a:snd)
-       (let-values ([(embedded.wav _) (extract-mox#embedded-file (cadr child) (car child))])
-         (remake-mox:hyperlink self #:snd embedded.wav))]
-      [(a:extLst)
-       (let ([extLst (xml-element->art-extension-list child)])
-         (remake-mox:hyperlink self #:extLst extLst))]
+      [(a:snd) (remake-mox:hyperlink self #:snd (xml-element->embedded-file child))]
+      [(a:extLst) (remake-mox:hyperlink self #:extLst (xml-element->art-extension-list child))]
       [else #false])))
