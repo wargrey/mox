@@ -16,3 +16,6 @@
 (mox-powerpoint-presentation powerpoint.ml)
 (mox-powerpoint-slide-masters powerpoint.ml)
 (mox-powerpoint-slides powerpoint.ml)
+
+(pptx-extract-paragraphs-from-slide-master pptx.zip)
+(pptx-extract-paragraphs-from-slide pptx.zip)
