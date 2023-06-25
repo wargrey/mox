@@ -5,7 +5,7 @@
 (require sgml/xexpr)
 
 (require "../../drawing/ml/main.rkt")
-(require "../../drawing/ml/lstStyle.rkt")
+(require "../../drawing/ml/TextListStyle.rkt")
 
 (require "pml.rkt")
 (require "extLst.rkt")

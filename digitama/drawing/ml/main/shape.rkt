@@ -11,7 +11,7 @@
 (require "line.rkt")
 (require "fill.rkt")
 (require "hyperlink.rkt")
-(require "format.rkt")
+(require "matrix.rkt")
 (require "extension.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,10 +130,10 @@
    [chExt : (Option MOX#Positive-Size2d) #false]))
 
 (define-mox-element shape-style #:for mox
-  ([line : MOX#Style-Matrix-Reference]
-   [fill : MOX#Style-Matrix-Reference]
-   [effect : MOX#Style-Matrix-Reference]
-   [font : MOX#Font-Reference]))
+  ([lnRef : MOX:Style-Matrix-Reference]
+   [fillRef : MOX:Style-Matrix-Reference]
+   [effectRef : MOX:Style-Matrix-Reference]
+   [fontRef : MOX:Font-Reference]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element group-shape-property #:for mox

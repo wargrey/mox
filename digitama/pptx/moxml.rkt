@@ -3,7 +3,6 @@
 (provide (all-defined-out))
 
 (require sgml/xml)
-(require sgml/sax)
 
 (require "../moxml.rkt")
 
@@ -58,7 +57,7 @@
                   application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.template.main+xml)
                  (set-box! &presentation
-                           (let ([main.xml (xml-document-normalize (read-xml-document /dev/pkgin))])
+                           (let ([main.xml (read-xml-document /dev/pkgin)])
                              (case pkg-type
                                [(text) (xml-document->presentation/text main.xml)]
                                [else (xml-document->presentation main.xml)])))]
@@ -67,7 +66,7 @@
                  (set-box! &presentationPr (xml-document-normalize (read-xml-document /dev/pkgin)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slide+xml)
                  (set-box! &slds
-                           (let* ([slide.xml (xml-document-normalize (read-xml-document /dev/pkgin))]
+                           (let* ([slide.xml (read-xml-document /dev/pkgin)]
                                   [self (case pkg-type
                                           [(text) (xml-document->slide/text slide.xml)]
                                           [else (xml-document->slide slide.xml)])])
@@ -76,7 +75,7 @@
                  (set-box! &sldLayouts (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &sldLayouts)))]
                 [(application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml)
                  (set-box! &sldMasters
-                           (let* ([slide-master.xml (xml-document-normalize (read-xml-document /dev/pkgin))]
+                           (let* ([slide-master.xml (read-xml-document /dev/pkgin)]
                                   [self (case pkg-type
                                           [(text) (xml-document->slide-master/text slide-master.xml)]
                                           [else (xml-document->slide-master slide-master.xml)])])

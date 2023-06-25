@@ -26,8 +26,9 @@
                               #:extLst (mox+extension-extLst mime+ext)))]
       [(a:audioCd)
        (let*-values ([(cdtimes rest) (xml-empty-children->map* child extract-mox#cd-time)]
+                     [(maybe-extLst) (xml-elements-ref rest 'a:extLst)]
                      [(self) (make-mox-audio-cd #:st (hash-ref cdtimes 'a:st)
                                                 #:end (hash-ref cdtimes 'a:end))])
-         (cond [(or (null? rest) (not (eq? (caar rest) 'a:extLst))) self]
-               [else (remake-mox-audio-cd self #:extLst (xml-element->art-extension-list (car rest)))]))]
+         (cond [(not maybe-extLst) self]
+               [else (remake-mox-audio-cd self #:extLst (xml-element->art-extension-list maybe-extLst))]))]
       [else #false])))

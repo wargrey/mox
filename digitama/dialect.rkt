@@ -50,12 +50,12 @@
                     [(xmlns attlist) (list (format-id #'id "xmlns") (format-id #'id "attlist"))]
                     [(mox:attr MOX:Attr extract-attr attr->xexpr) (racket->mox:attr-names #'x #'id)]
                     [(AttlistType defattr ...) (if (has-mandatory-attribute? #'(attr-defs ...)) (list #'MOX:Attr) (list #'(Option MOX:Attr) #'#false))]
-                    [(defs-for-root ...) (if (attribute kw-root) (list #'[xmlns : XML-Namespaces null]) null)]
+                    [(defs-for-root ...) (if (attribute kw-root) (list #'[src : Any #false] #'[xmlns : XML-Namespaces null]) null)]
                     [(defs-for-attr ...) (if (null? (syntax-e #'[attr-defs ...])) null (list #'[attlist : AttlistType defattr ...]))]
                     [define-attr (if (attribute kw-attlist) #'(define-mox-attribute id #:for x #:-> parent (attr-defs ...)) #'(void))])
        (syntax/loc stx
          (begin define-attr
-                (define-struct elem : Elem ([src : Any #false] defs-for-root ... defs-for-attr ... field-defs ...) #:transparent))))]))
+                (define-struct elem : Elem (defs-for-root ... defs-for-attr ... field-defs ...) #:transparent))))]))
 
 (define-syntax (define-mox-attribute stx)
   (syntax-parse stx #:literals [:]

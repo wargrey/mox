@@ -4,7 +4,7 @@
 (provide (all-from-out "main/base.rkt" "main/text.rkt"))
 (provide (all-from-out "main/color.rkt" "main/fill.rkt"))
 (provide (all-from-out "main/shape.rkt" "main/media.rkt"))
-(provide (all-from-out "main/format.rkt" "main/extension.rkt"))
+(provide (all-from-out "main/matrix.rkt" "main/extension.rkt"))
 
 (require "../../dialect.rkt")
 (require "../../shared/ml/common-simple-types.rkt")
@@ -13,7 +13,7 @@
 (require "main/text.rkt")
 (require "main/color.rkt")
 (require "main/fill.rkt")
-(require "main/format.rkt")
+(require "main/matrix.rkt")
 (require "main/shape.rkt")
 (require "main/media.rkt")
 (require "main/extension.rkt")

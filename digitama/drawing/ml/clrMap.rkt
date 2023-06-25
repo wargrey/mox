@@ -22,7 +22,7 @@
 
 (define xml-element->color-map-override : (-> XML-Element (Option MOX-Color-Map-Override))
   (lambda [clrMapOvr]
-    (define children : (Listof XML-Element-Children) (caddr clrMapOvr))
+    (define children : XML-Element-Children (caddr clrMapOvr))
 
     (and (pair? children)
          (let ([child (car children)])

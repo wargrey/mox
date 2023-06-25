@@ -80,8 +80,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-attribute text-autofit #:for mox
-  ([fontScale : XML-Percentage #:= [#false (cons 100.0 '%)] #:<-> xml:attr-value->percentage]
-   [lnSpcReduction : XML-Percentage #:= [#false (cons 0.0 '%)] #:<-> xml:attr-value->percentage]))
+  ([fontScale : XML-Percentage #:= [#false 100%] #:<-> xml:attr-value->percentage]
+   [lnSpcReduction : XML-Percentage #:= [#false 0%] #:<-> xml:attr-value->percentage]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element text-character-property #:for mox
@@ -127,16 +127,7 @@
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element text-list-style #:for mox
-  ([defPPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl1pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl2pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl3pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl4pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl5pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl6pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl7pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl8pPr : (Option MOX:Text-Paragraph-Property) #false]
-   [lvl9pPr : (Option MOX:Text-Paragraph-Property) #false]
+  ([pPrs : (Option (Immutable-HashTable Symbol MOX:Text-Paragraph-Property)) #false]
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -171,14 +162,14 @@
    [extLst : (Option MOX:Office-Art-Extension-List) #false]))
 
 (define-mox-element text-paragraph #:for mox
-  ([pPr : (Option MOX:Text-Paragraph-Property)]
-   [r : (Listof MOX-Text-Run) null]
+  ([pPr : (Option MOX:Text-Paragraph-Property) #false]
+   [r* : (Listof MOX-Text-Run) null]
    [endParaRPr : (Option MOX:Text-Character-Property) #false]))
 
 (define-mox-element text-body #:for mox
   ([bodyPr : MOX:Text-Body-Property]
    [lstStyle : (Option MOX:Text-List-Style) #false]
-   [p : (Pairof MOX:Text-Paragraph (Listof MOX:Text-Paragraph))]))
+   [p+ : (Pairof MOX:Text-Paragraph (Listof MOX:Text-Paragraph))]))
 
 (define-mox-element text-run #:for mox
   ([rPr : (Option MOX:Text-Character-Property) #false]

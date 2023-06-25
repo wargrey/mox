@@ -4,7 +4,7 @@
 
 (require sgml/xexpr)
 
-(require "../../../drawing/ml/lstStyle.rkt")
+(require "../../../drawing/ml/TextListStyle.rkt")
 (require "../../../drawing/ml/clrMap.rkt")
 
 (require "../pml.rkt")

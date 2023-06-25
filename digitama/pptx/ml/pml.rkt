@@ -148,7 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-mox-element #:root presentation #:for pptx
   #:attlist
-  ([serverZoom : XML-Percentage #:= [#false (cons 50.0 '%)] #:<-> xml:attr-value->percentage]
+  ([serverZoom : XML-Percentage #:= [#false 50%] #:<-> xml:attr-value->percentage]
    [firstSlideNum : Index #:= [#false 1] #:<-> xml:attr-value->index]
    [showSpecialPlsOnTitleSld : XML-Boolean #:= [#false 'true] #:<-> xml:attr-value->boolean]
    [rtl : XML-Boolean #:= [#false 'false] #:<-> xml:attr-value->boolean]
