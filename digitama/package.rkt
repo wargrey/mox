@@ -20,6 +20,8 @@
 (require "shared/ml/common-simple-types.rkt")
 (require "drawing/ml/main.rkt")
 
+(require "crypto/cfb.rkt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-Stdin (U String Path Bytes))
 
@@ -65,6 +67,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define #:forall (x) mox-input-package : (->* (MOX-Stdin (MOXML-Agentof (∩ MOXML x))) (MOXML-Package-Type) (MOX-Packageof x))
   (lambda [/dev/stdin mox-agent [pkg-type 'full]]
+    (define /dev/zipin : Input-Port
+      (cond [(input-port? /dev/stdin) /dev/stdin]
+            [(bytes? /dev/stdin) (open-input-file (bytes->path /dev/stdin))]
+            [else (open-input-file /dev/stdin)]))
+
+    ((inst dynamic-wind (MOX-Packageof x))
+     void
+     (λ []
+       (if (cfb-identifier-okay? /dev/zipin)
+           ((inst mox-input-encrypted-package x) /dev/zipin mox-agent pkg-type)
+           ((inst mox-input-plain-package x) /dev/zipin mox-agent pkg-type)))
+     (λ [] (unless (eq? /dev/zipin /dev/stdin)
+             (close-input-port /dev/zipin))))))
+
+(define #:forall (x) mox-input-plain-package : (-> Input-Port (MOXML-Agentof (∩ MOXML x)) MOXML-Package-Type (MOX-Packageof x))
+  (lambda [/dev/zipin mox-agent pkg-type]
     (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent pkg-type))
     (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent pkg-type))
     (define-values (ooxml mox-unzip mox-realize) (mox-agent pkg-type))
@@ -78,11 +96,6 @@
     (define &rels-xmlns : (Boxof String) (box ""))
     (define relationships : (HashTable Symbol MOX-Relationship) (make-hasheq))
     (define part-relationships : (HashTable String MOX-Relationships) (make-hash))
-
-    (define /dev/zipin : Input-Port
-      (cond [(input-port? /dev/stdin) /dev/stdin]
-            [(bytes? /dev/stdin) (open-input-file (bytes->path /dev/stdin))]
-            [else (open-input-file /dev/stdin)]))
 
     (zip-extract /dev/zipin
                  ;;; NOTE that MS Office Open XML Package dosen't keep folders in archive.
@@ -109,9 +122,6 @@
                                            [immediately-extracted-raw (port->bytes /dev/pkgin)])
                                        (cons type (procedure-rename (λ [] (open-input-bytes immediately-extracted-raw ooxml:://))
                                                                     (string->symbol ooxml:://)))))]))))
-
-    (unless (eq? /dev/zipin /dev/stdin)
-      (close-input-port /dev/zipin))
     
     (mox-package (mox-content-types (unbox &types-xmlns) extensions parts)
                  (mox-relationships (unbox &rels-xmlns) relationships)
@@ -120,6 +130,17 @@
                  (shared-realize)
                  (mox-realize)
                  orphans)))
+
+(define #:forall (x) mox-input-encrypted-package : (-> Input-Port (MOXML-Agentof (∩ MOXML x)) MOXML-Package-Type (MOX-Packageof x))
+  (lambda [/dev/zipin mox-agent pkg-type]
+    (define cfb (read-compound-file /dev/zipin))
+ 
+    (display-cfb-header (ms-cfb-header cfb) #:mode #true)
+    (displayln cfb)
+    (for ([dir (in-list (ms-cfb-directories cfb))])
+      (display-cfb-directory-entry dir #:mode #true))
+
+    ((inst mox-input-plain-package x) /dev/zipin mox-agent pkg-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable String Symbol) XML-Event-Handler)
