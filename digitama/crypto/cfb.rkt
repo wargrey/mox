@@ -7,13 +7,15 @@
 (require "../ole/cfb.rkt")
 (require "../ole/stream.rkt")
 
-(require "version.rkt")
-(require "dsmap.rkt")
+(require "ds/version.rkt")
+(require "ds/map.rkt")
+(require "ds/definition.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct ms-crypto
   ([version : DataSpace-Version-Info]
-   [map-entries : (Listof DataSpace-Map-Entry)])
+   [map-entries : (Listof DataSpace-Map-Entry)]
+   [transform-references : (Immutable-HashTable String (Listof String))])
   #:transparent
   #:type-name MS-Crypto)
 
@@ -30,8 +32,13 @@
       (define entries : (Listof DataSpace-Map-Entry)
         (assert (call-with-input-stream /dev/cfbin cfb "/\u0006DataSpaces/DataSpaceMap"
                   read-ds-map-entries)))
-      
-      (for ([e (in-list entries)])
-        (writeln e))
 
-      (ms-crypto verinfo entries))))
+      (define transform-references : (Immutable-HashTable String (Listof String))
+        (read-ds-definition /dev/cfbin cfb
+              "/\u0006DataSpaces/DataSpaceInfo/"
+              (for/list : (Listof String) ([e (in-list entries)])
+                (cdr e))))
+
+      (writeln transform-references)
+
+      (ms-crypto verinfo entries transform-references))))
