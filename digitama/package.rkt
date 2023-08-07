@@ -18,9 +18,12 @@
 (require "shared/moxml.rkt")
 
 (require "shared/ml/common-simple-types.rkt")
-(require "drawing/ml/main.rkt")
+
+(require "ole/cfb.rkt")
+(require "ole/header.rkt")
 
 (require "crypto/cfb.rkt")
+(require "crypto/stream.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-Stdin (U String Path Bytes))
@@ -76,7 +79,9 @@
      void
      (λ []
        (if (cfb-identifier-okay? /dev/zipin)
-           ((inst mox-input-encrypted-package x) /dev/zipin mox-agent pkg-type)
+           (let* ([crypto (read-crypto-compound-file /dev/zipin)]
+                  [/dev/cfbin (open-encrypted-input-stream /dev/zipin crypto)])
+             ((inst mox-input-plain-package x) /dev/cfbin mox-agent pkg-type))
            ((inst mox-input-plain-package x) /dev/zipin mox-agent pkg-type)))
      (λ [] (unless (eq? /dev/zipin /dev/stdin)
              (close-input-port /dev/zipin))))))
@@ -130,17 +135,6 @@
                  (shared-realize)
                  (mox-realize)
                  orphans)))
-
-(define #:forall (x) mox-input-encrypted-package : (-> Input-Port (MOXML-Agentof (∩ MOXML x)) MOXML-Package-Type (MOX-Packageof x))
-  (lambda [/dev/zipin mox-agent pkg-type]
-    (define cfb (read-compound-file /dev/zipin))
- 
-    (display-cfb-header (ms-cfb-header cfb) #:mode #true)
-    (displayln cfb)
-    (for ([dir (in-list (ms-cfb-directories cfb))])
-      (display-cfb-directory-entry dir #:mode #true))
-
-    ((inst mox-input-plain-package x) /dev/zipin mox-agent pkg-type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable String Symbol) XML-Event-Handler)
