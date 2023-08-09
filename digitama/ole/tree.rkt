@@ -8,7 +8,7 @@
 (require "directory.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type CFB-Object-Info (List String Natural Index))
+(define-type CFB-Object-Info (List String Symbol Natural Index))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct cfb-tree-node
@@ -49,6 +49,7 @@
     (for/list ([pidx (in-list (cfb-tree-node->path-element-indices tree))])
       (define entry (vector-ref entries (last pidx)))
       (list (cfb-path-element-indices->path entries pidx)
+            (cfb-directory-entry-type entry)
             (bitwise-and (cfb-directory-entry-stream-size entry) #xFFFFFFFFFF)
             (cfb-directory-entry-sector-chain-head entry)))))
 

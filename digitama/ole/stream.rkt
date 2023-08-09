@@ -16,8 +16,8 @@
     (define cutoff-size : Index (cfb-header-stream-threshold-size (ms-cfb-header cfb)))
 
     (and (list? object)
-         (let* ([size (cadr object)]
-                [chain-head (caddr object)]
+         (let* ([size (caddr object)]
+                [chain-head (cadddr object)]
                 [ministream? (< size cutoff-size)])
            (open-input-block-chain #:total size #:name object #:force-thread-safe? safe?
                                    /dev/cfbin

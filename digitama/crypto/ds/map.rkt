@@ -6,7 +6,7 @@
 (require digimon/enumeration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-type DataSpace-Map-Entry (Pairof (Listof DataSpace-Map-RefCom) String))
+(define-type DataSpace-Map-Entry (Pairof String (Listof DataSpace-Map-RefCom)))
 
 (define-enumeration* ds-refcom-type #:+> DS-RefCom-Type
   ds-refcom-type->number number->ds-refcom-type
@@ -35,5 +35,5 @@
       (for/list ([idx (in-range count)])
         (read-ds-map-refcom /dev/mapin)))
     
-    (cons refcoms
-          (read-ln:lcstring /dev/mapin 4))))
+    (cons (read-ln:lcstring /dev/mapin 4)
+          refcoms)))
