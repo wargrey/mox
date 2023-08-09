@@ -15,9 +15,9 @@
    [type : (#:enum LUInt32 ds-transform-type->number number->ds-transform-type)]
    [id : (LNLocale 4)]
    [name : (LNLocale 4)]
-   [reader-version : LUInt32]
-   [updater-version : LUInt32]
-   [writer-version : LUInt32]))
+   [reader-version : LUInt32 #:radix 16]
+   [updater-version : LUInt32 #:radix 16]
+   [writer-version : LUInt32 #:radix 16]))
 
 (define-binary-struct extensibility-header : Extensibility-Header
   ([length : LUInt32]))

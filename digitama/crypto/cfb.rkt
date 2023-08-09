@@ -14,6 +14,8 @@
 (require "ds/definition.rkt")
 (require "ds/transform.rkt")
 
+(require "encryption.rkt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (struct ms-crypto
   ([version : DataSpace-Version-Info])
@@ -21,17 +23,15 @@
   #:type-name MS-Crypto)
 
 (struct ECMA-376 ms-crypto
-  ([refcom : String]
-   [transform : IRMDSTransformInfo])
+  ([transform : IRMDSTransformInfo]
+   [encryption : Encryption-Info]
+   [stream-path : String])
   #:transparent)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define read-crypto-compound-file : (-> Input-Port MS-Crypto)
   (lambda [/dev/cfbin]
     (define cfb (read-compound-file /dev/cfbin))
-
-    (for ([obj (in-list (ms-cfb-objects cfb))])
-      (writeln obj))
 
     (parameterize ([default-stdin-locale "UTF-16LE"])
       (define verinfo : DataSpace-Version-Info
@@ -62,5 +62,10 @@
       (assert (call-with-input-stream /dev/cfbin cfb
                 "/\u0006DataSpaces/TransformInfo/StrongEncryptionTransform/\u0006Primary"
                 read-IRMDS-transform-info)))
+
+    (define encryption-info : Encryption-Info
+      (or (call-with-input-stream /dev/cfbin cfb "/EncryptionInfo"
+            read-encryption-info)
+          (error 'read-crypto-ecma-376 "unimplemented encryption approch")))
     
-    (ECMA-376 verinfo refcom transform-info)))
+    (ECMA-376 verinfo transform-info encryption-info refcom)))
