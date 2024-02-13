@@ -11,9 +11,7 @@
 (require digimon/enumeration)
 (require digimon/predicate)
 (require digimon/dimension)
-
-(require racket/keyword)
-(require racket/symbol)
+(require digimon/symbol)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-System-Color-Datum (U String (Pairof String Index)))
@@ -265,7 +263,7 @@
 
 (define mox-color-transformations? : (-> Any Boolean : (Listof (U MOX-Color-Component-Alteration Symbol)))
   (lambda [ts]
-    (is-listof? ts mox-color-transformation+element?)))
+    (listof? ts mox-color-transformation+element?)))
 
 (define mox-fill-style? : (-> Any Boolean : MOX-Fill-Style)
   (lambda [t]
@@ -276,14 +274,14 @@
   (lambda [v]
     (and (pair? v)
          (mox-fill-style? (car v))
-         ((inst is-listof? CSS-%) (cdr v) css-%?))))
+         ((inst listof? CSS-%) (cdr v) css-%?))))
 
 (define mox-linear-color-stop-list? : (-> Any Boolean : MOX-Linear-Color-Stops)
   (lambda [cs]
     (and (list? cs)
          (pair? cs)
          (mox-linear-color-stop? (car cs))
-         ((inst is-listof+? MOX-Linear-Color-Stop) (cdr cs) mox-linear-color-stop?))))
+         ((inst listof+? MOX-Linear-Color-Stop) (cdr cs) mox-linear-color-stop?))))
 
 (define mox-line-join-datum? : (-> Any Boolean : #:+ MOX-Line-Join-Datum)
   (lambda [v]

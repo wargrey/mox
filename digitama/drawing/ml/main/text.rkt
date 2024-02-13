@@ -2,7 +2,7 @@
 
 (provide (all-defined-out))
 
-(require digimon/number)
+(require digimon/digitama/predicate)
 
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")

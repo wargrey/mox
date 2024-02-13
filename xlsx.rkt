@@ -2,10 +2,12 @@
 
 (provide (all-defined-out))
 (provide (all-from-out "digitama/base.rkt"))
+(provide (all-from-out "digitama/crypto/parameter.rkt"))
 
 (require "digitama/base.rkt")
 (require "digitama/package.rkt")
 (require "digitama/xlsx/moxml.rkt")
+(require "digitama/crypto/parameter.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-Excel-Package (MOX-Packageof MOX-Excel))

@@ -5,6 +5,8 @@
 (require racket/port)
 
 (require digimon/archive)
+(require digimon/digitama/ioexn)
+
 (require sgml/digitama/xexpr/sax)
 
 (require typed/racket/unsafe)
@@ -15,13 +17,11 @@
 
 (require "moxml.rkt")
 (require "drawing/moxml.rkt")
-(require "shared/moxml.rkt")
 
+(require "shared/moxml.rkt")
 (require "shared/ml/common-simple-types.rkt")
 
-(require "ole/cfb.rkt")
 (require "ole/header.rkt")
-
 (require "crypto/cfb.rkt")
 (require "crypto/stream.rkt")
 
@@ -68,7 +68,9 @@
   #:type-name MOX-Packageof)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define #:forall (x) mox-input-package : (->* (MOX-Stdin (MOXML-Agentof (∩ MOXML x))) (MOXML-Package-Type) (MOX-Packageof x))
+(define #:forall (x) mox-input-package : (->* (MOX-Stdin (MOXML-Agentof (∩ MOXML x)))
+                                              (MOXML-Package-Type)
+                                              (MOX-Packageof x))
   (lambda [/dev/stdin mox-agent [pkg-type 'full]]
     (define /dev/zipin : Input-Port
       (cond [(input-port? /dev/stdin) /dev/stdin]
@@ -81,12 +83,15 @@
        (if (cfb-identifier-okay? /dev/zipin)
            (let* ([crypto (read-crypto-compound-file /dev/zipin)]
                   [/dev/cfbin (open-encrypted-input-stream /dev/zipin crypto)])
-             ((inst mox-input-plain-package x) /dev/cfbin mox-agent pkg-type))
+             (if (input-port? /dev/cfbin)
+                 ((inst mox-input-plain-package x) /dev/cfbin mox-agent pkg-type)
+                 (throw-crypto-error /dev/zipin mox-input-package "failed to decrypt the package")))
            ((inst mox-input-plain-package x) /dev/zipin mox-agent pkg-type)))
      (λ [] (unless (eq? /dev/zipin /dev/stdin)
              (close-input-port /dev/zipin))))))
 
-(define #:forall (x) mox-input-plain-package : (-> Input-Port (MOXML-Agentof (∩ MOXML x)) MOXML-Package-Type (MOX-Packageof x))
+(define #:forall (x) mox-input-plain-package : (-> Input-Port (MOXML-Agentof (∩ MOXML x)) MOXML-Package-Type
+                                                   (MOX-Packageof x))
   (lambda [/dev/zipin mox-agent pkg-type]
     (define-values (_s shared-unzip shared-realize) (moxml-sharedml-agent pkg-type))
     (define-values (_d drawing-unzip drawing-realize) (moxml-drawingml-agent pkg-type))
@@ -104,7 +109,7 @@
 
     (zip-extract /dev/zipin
                  ;;; NOTE that MS Office Open XML Package dosen't keep folders in archive.
-                 (λ [[/dev/pkgin : Input-Port] [entry : String] [folder? : Boolean] [timestamp : Natural] [datum : Any]] : Any
+                 (λ [[/dev/pkgin : Input-Port] [entry : String] [folder? : Boolean] [timestamp : Natural] [_ : Any]] : Any
                    (define type : Symbol (mox-part-type entry extensions parts))
 
                    (or (mox-unzip entry type /dev/pkgin)
@@ -115,17 +120,18 @@
                          [(application/vnd.openxmlformats-package.types+xml)
                           (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
                          [(application/vnd.openxmlformats-package.relationships+xml)
-                          (cond [(string=? entry "_rels/.rels") (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))]
-                                [else (let ([&xmlns : (Boxof String) (box "")]
-                                            [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
-                                            [pentry : String (regexp-replace* #px"[_.]rels($|[/])" entry "")])
-                                        (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
-                                        (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))])]
+                          (if (string=? entry "_rels/.rels")
+                              (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))
+                              (let ([&xmlns : (Boxof String) (box "")]
+                                    [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
+                                    [pentry : String (regexp-replace* #px"[_.]rels($|[/])" entry "")])
+                                (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
+                                (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels))))]
                          [else ; might use them later
                           (hash-set! orphans entry
                                      (let ([ooxml::// (format "~a:///~a" ooxml entry)]
-                                           [immediately-extracted-raw (port->bytes /dev/pkgin)])
-                                       (cons type (procedure-rename (λ [] (open-input-bytes immediately-extracted-raw ooxml:://))
+                                           [raw (port->bytes /dev/pkgin)])
+                                       (cons type (procedure-rename (λ [] (open-input-bytes raw ooxml:://))
                                                                     (string->symbol ooxml:://)))))]))))
     
     (mox-package (mox-content-types (unbox &types-xmlns) extensions parts)
@@ -137,53 +143,57 @@
                  orphans)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable String Symbol) XML-Event-Handler)
+(define make-types-sax-handler : (-> (Boxof String) (HashTable PRegexp Symbol) (HashTable String Symbol)
+                                     XML-Event-Handler)
   ;;; OpenPackagingConventions 9.1.2.2
   ; For file readers, if an element matches both Default and Override, Override takes precedence. 
   (lambda [&xmlns extensions parts]
     ((inst make-xml-event-handler Void)
-     #:element (λ [[element : Symbol] [xpath : (Listof Symbol)] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
-                 (when (pair? attrs)
-                   (case element
-                     [(Default)
-                      (let ([ct (assq 'ContentType attrs)]
-                            [et (assq 'Extension attrs)])
-                        (when (and ct et) ; Extensions in Racket are dot-prefixed
-                          (let ([ext (pregexp (string-append "[.]" (xml:attr-value->string (cdr et)) "$"))])
-                            (hash-set! extensions ext (xml:attr-value->symbol (cdr ct))))))]
-                     [(Override)
-                      (let ([ct (assq 'ContentType attrs)]
-                            [pn (assq 'PartName attrs)])
-                        (when (and ct pn)
-                          (hash-set! parts
-                                     (substring (xml:attr-value->string (cdr pn)) 1)  ; ZIP does not store items with leading '/'
-                                     (xml:attr-value->symbol (cdr ct)))))]
-                     [(Types)
-                      (let ([?xmlns (assq 'xmlns attrs)])
-                        (when (pair? ?xmlns)
-                          (set-box! &xmlns (xml:attr-value->string (cdr ?xmlns)))))]))))))
+     #:element
+     (λ [[element : Symbol] [xpath : (Listof Symbol)] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
+       (when (pair? attrs)
+         (case element
+           [(Default)
+            (let ([ct (assq 'ContentType attrs)]
+                  [et (assq 'Extension attrs)])
+              (when (and ct et) ; Extensions in Racket are dot-prefixed
+                (let ([ext (pregexp (string-append "[.]" (xml:attr-value->string (cdr et)) "$"))])
+                  (hash-set! extensions ext (xml:attr-value->symbol (cdr ct))))))]
+           [(Override)
+            (let ([ct (assq 'ContentType attrs)]
+                  [pn (assq 'PartName attrs)])
+              (when (and ct pn)
+                (hash-set! parts
+                           ; ZIP does not store items with leading '/'
+                           (substring (xml:attr-value->string (cdr pn)) 1)
+                           (xml:attr-value->symbol (cdr ct)))))]
+           [(Types)
+            (let ([?xmlns (assq 'xmlns attrs)])
+              (when (pair? ?xmlns)
+                (set-box! &xmlns (xml:attr-value->string (cdr ?xmlns)))))]))))))
 
 (define make-relationships-sax-handler : (-> (Boxof String) (HashTable Symbol MOX-Relationship) XML-Event-Handler)
   (lambda [&xmlns rels]
     ((inst make-xml-event-handler Void)
-     #:element (λ [[element : Symbol] [xpath : (Listof Symbol)] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
-                 (when (pair? attrs)
-                   (case element
-                     [(Relationship)
-                      (let ([mode (assq 'TargetMode attrs)]
-                            [target (assq 'Target attrs)]
-                            [type (assq 'Type attrs)]
-                            [Id (assq 'Id attrs)])
-                        (when (and target type Id)
-                          (let ([id (mox:attr-value->relationship-id (cdr Id))])
-                            (hash-set! rels id (mox-relationship id
-                                                                 (xml:attr-value->string (cdr target))
-                                                                 (xml:attr-value->symbol (cdr type))
-                                                                 (and mode (equal? (cdr mode) "External")))))))]
-                     [(Relationships)
-                      (let ([?xmlns (assq 'xmlns attrs)])
-                        (when (pair? ?xmlns)
-                          (set-box! &xmlns (xml:attr-value->string (cdr ?xmlns)))))]))))))
+     #:element
+     (λ [[element : Symbol] [xpath : (Listof Symbol)] [attrs : (Option SAX-Attributes)] [?empty : Boolean] [?preserve : Boolean] [_ : Void]] : Void
+       (when (pair? attrs)
+         (case element
+           [(Relationship)
+            (let ([mode (assq 'TargetMode attrs)]
+                  [target (assq 'Target attrs)]
+                  [type (assq 'Type attrs)]
+                  [Id (assq 'Id attrs)])
+              (when (and target type Id)
+                (let ([id (mox:attr-value->relationship-id (cdr Id))])
+                  (hash-set! rels id (mox-relationship id
+                                                       (xml:attr-value->string (cdr target))
+                                                       (xml:attr-value->symbol (cdr type))
+                                                       (and mode (equal? (cdr mode) "External")))))))]
+           [(Relationships)
+            (let ([?xmlns (assq 'xmlns attrs)])
+              (when (pair? ?xmlns)
+                (set-box! &xmlns (xml:attr-value->string (cdr ?xmlns)))))]))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-part-type : (-> String (HashTable PRegexp Symbol) (HashTable String Symbol) Symbol)
@@ -191,5 +201,6 @@
     (hash-ref parts entry
               (λ [] (or (for/or : (Option Symbol) ([(px.ext type) (in-hash extensions)])
                           (and (regexp-match? px.ext entry) type))
-                        (cond [(string=? entry "[Content_Types].xml") 'application/vnd.openxmlformats-package.types+xml]
-                              [else '||]))))))
+                        (if (string=? entry "[Content_Types].xml")
+                            'application/vnd.openxmlformats-package.types+xml
+                            '||))))))

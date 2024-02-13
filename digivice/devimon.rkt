@@ -98,8 +98,8 @@
       (when (and jobs (> jobs 0))
         (parallel-workers jobs)))
 
-    (make-assume-oldfiles (devimon-flags-old-file options))
-    (make-assume-newfiles (devimon-flags-new-file options))
+    (make-assumed-oldfiles (devimon-flags-old-file options))
+    (make-assumed-newfiles (devimon-flags-new-file options))
 
     (parameterize ([current-logger /dev/dtrace])
       (define digimons (collection-info))

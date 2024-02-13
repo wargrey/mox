@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 (provide (all-from-out "digitama/base.rkt"))
 (provide (all-from-out "digitama/pptx/ml/pml.rkt"))
+(provide (all-from-out "digitama/crypto/parameter.rkt"))
 
 (require "digitama/base.rkt")
 (require "digitama/package.rkt")
@@ -12,6 +13,8 @@
 (require "digitama/pptx.rkt")
 
 (require "digitama/pptx/ml/pml.rkt")
+
+(require "digitama/crypto/parameter.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-PowerPoint-Package (MOX-Packageof MOX-PowerPoint))
