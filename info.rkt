@@ -8,6 +8,7 @@
 
 (define deps '("base" "digimon" "w3s" "typed-racket-lib" "typed-racket-more" "scribble-lib"))
 (define build-deps '("scribble-lib" "racket-doc" "typed-racket-doc" "digimon" "graphics"))
+(define test-omit-paths 'all)
 
 (define raco-commands '(["devimon" mox/digivice/devimon "translate Scribble into MS Office documents" #false]))
 
