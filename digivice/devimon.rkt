@@ -83,7 +83,7 @@
                                           retcode)
                                         (custodian-shutdown-all (current-custodian)))))
 
-                            (dtrace-datum-notice eof "Leave Digimon Zone: ~a" (current-digimon))
+                            (dtrace-sentry-notice #:end? #true eof "Leave Digimon Zone: ~a" (current-digimon))
                             (thread-wait tracer))))])))
 
 (define main : (-> (U (Listof String) (Vectorof String)) Nothing)

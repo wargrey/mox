@@ -10,7 +10,7 @@
 (require digimon/digitama/latex)
 
 (require (except-in digimon/digivice/wisemon/parameter the-name))
-(require digimon/digivice/wisemon/native)
+(require digimon/digivice/wisemon/ffi)
 (require digimon/digivice/wisemon/racket)
 (require digimon/digivice/wisemon/spec)
 
@@ -45,7 +45,7 @@
 
 (define make~docx : MOX-Render
   (lambda [digimon info-ref]
-    (wisemon-make (make-native-library-specs info-ref))
+    (wisemon-make (make-ffi-library-specs info-ref))
     (wisemon-compile (current-directory) digimon info-ref)
 
     (wisemon-make (make-docx-specs info-ref) (current-make-real-targets))))

@@ -7,6 +7,8 @@
 
 (require sgml/digitama/xexpr/datatype)
 
+(require digimon/dimension)
+
 ;;; WARNING: RNC might be wrong
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,13 +30,13 @@
 (define mox:attr-value->universal-measure : (XML-Attribute-Value->Datum (Option XML-Dimension))
   (lambda [v]
     (define dim (xml:attr-value->dimension v))
-    (and dim (mox-measure-unit? (cdr dim)) dim)))
+    (and dim (mox-measure-unit? (#%dim-unit dim)) dim)))
 
 (define mox:attr-value+>universal-measure : (XML-Attribute-Value->Datum (Option XML-Dimension))
   (lambda [v]
     (define dim (xml:attr-value+>dimension v))
-    (and dim (mox-measure-unit? (cdr dim)) dim)))
+    (and dim (mox-measure-unit? (#%dim-unit dim)) dim)))
 
 (define mox:attr-value->hex-rgb-color : (XML-Attribute-Value->Datum (Option Index))
   (lambda [v]
-    (xml:attr-value->hexdecimal v 6)))
+    (xml:attr-value->hexadecimal v 6)))
