@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 
 (require digimon/digitama/predicate)
+(require digimon/dimension)
 
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")

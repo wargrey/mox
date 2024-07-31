@@ -21,7 +21,7 @@
 (define-type MOX-Color-Datum (U MOX-Raw-Color-Datum MOX-Color-Transform))
 
 (define-type MOX-Fill-Style (U MOX-Color-Datum CSS-Image))
-(define-type MOX-Linear-Color-Stop (Pairof MOX-Fill-Style (Listof CSS-%)))
+(define-type MOX-Linear-Color-Stop (Pairof MOX-Fill-Style (Listof FlPercentage)))
 (define-type MOX-Linear-Color-Stops (Pairof MOX-Linear-Color-Stop (Listof+ MOX-Linear-Color-Stop)))
 (define-type MOX-Line-Join-Datum (U Symbol Nonnegative-Flonum))
 (define-type MOX-Line-Dash-Datum (U Symbol MOX-Line-Dasharray))
@@ -66,31 +66,31 @@
 
 (define-css-function-filter <mox-color-component-alteration> #:-> MOX-Color-Component-Alteration
   ;;; Fundamentals and Markup Language References, 20.1.2.3
-  [(alpha)          #:=> [(mox-color-component-alteration 'alpha      [value ? #%per? flonum?])]
+  [(alpha)          #:=> [(mox-color-component-alteration 'alpha      [value ? flpercentage? flonum?])]
    <:nonneg-percent+mod+off:>]
-  [(red)            #:=> [(mox-color-component-alteration 'red        [value ? #%per? flonum?])]
+  [(red)            #:=> [(mox-color-component-alteration 'red        [value ? flpercentage? flonum?])]
    <:percent+mod+off:>]
-  [(green)          #:=> [(mox-color-component-alteration 'green      [value ? #%per? flonum?])]
+  [(green)          #:=> [(mox-color-component-alteration 'green      [value ? flpercentage? flonum?])]
    <:percent+mod+off:>]
-  [(blue)           #:=> [(mox-color-component-alteration 'blue       [value ? #%per? flonum?])]
+  [(blue)           #:=> [(mox-color-component-alteration 'blue       [value ? flpercentage? flonum?])]
    <:percent+mod+off:>]
-  [(hue)            #:=> [(mox-color-component-alteration 'hue        [value ? #%per? flonum?])]
+  [(hue)            #:=> [(mox-color-component-alteration 'hue        [value ? flpercentage? flonum?])]
    <:angle+mod+off:>]
-  [(sat saturation) #:=> [(mox-color-component-alteration 'saturation [value ? #%per? flonum?])]
+  [(sat saturation) #:=> [(mox-color-component-alteration 'saturation [value ? flpercentage? flonum?])]
    <:percent+mod+off:>]
-  [(lum luminance)  #:=> [(mox-color-component-alteration 'luminance  [value ? #%per? flonum?])]
+  [(lum luminance)  #:=> [(mox-color-component-alteration 'luminance  [value ? flpercentage? flonum?])]
    <:percent+mod+off:>]
-  [(tint)           #:=> [(mox-color-component-alteration 'tint       [value ? #%per?])]
+  [(tint)           #:=> [(mox-color-component-alteration 'tint       [value ? flpercentage?])]
    <:fixed-percentage:>]
-  [(shade)          #:=> [(mox-color-component-alteration 'shade      [value ? #%per?])]
+  [(shade)          #:=> [(mox-color-component-alteration 'shade      [value ? flpercentage?])]
    <:fixed-percentage:>]
   #:where
   [(define <:mod+off:>
      (CSS<?> [(<css:hash> '(#:mod #:Mod #:modulation #:Modulation)) ((inst CSS:<^> Any) (<mox+percentage>))]
              [(<css:hash> '(#:off #:Off #:offset #:Offset)) ((inst CSS:<^> Any) (<mox-percentage>))]))
 
-   (define <:percent+mod+off:> (CSS<+> (CSS:<^> (CSS:<~> (<mox-percentage>) #%dim-value)) <:mod+off:>))
-   (define <:nonneg-percent+mod+off:> (CSS<+> (CSS:<^> (CSS:<~> (<mox+percentage>) #%dim-value)) <:mod+off:>))
+   (define <:percent+mod+off:> (CSS<+> (CSS:<^> (CSS:<~> (<mox-percentage>) (inst #%dim-value Flonum))) <:mod+off:>))
+   (define <:nonneg-percent+mod+off:> (CSS<+> (CSS:<^> (CSS:<~> (<mox+percentage>) (inst #%dim-value Nonnegative-Flonum))) <:mod+off:>))
    (define <:angle+mod+off:> (CSS<+> (CSS:<^> (<mox-angle>)) <:mod+off:>))
    (define <:fixed-percentage:> (CSS:<^> (<mox+percentage>)))])
 
@@ -162,18 +162,19 @@
 
 (define-css-disjoint-filter <mox-line-join> #:-> (U Symbol Nonnegative-Flonum)
   (<css-keyword> mox-line-join-types)
-  (CSS:<~> (<mox+percentage> mox+1000ths-percentage) #%dim-value))
+  (CSS:<~> (<mox+percentage> mox+1000ths-percentage)
+           (inst #%dim-value Nonnegative-Flonum)))
 
 (define-css-disjoint-filter <mox-font> #:-> (U MOX-Font-Datum CSS-Wide-Keyword)
   (<css:string>)
   (<mox-panose-font>))
 
-(define-css-disjoint-filter <mox-percentage> #:-> CSS-%
+(define-css-disjoint-filter <mox-percentage> #:-> FlPercentage
   (<css-percentage>)
   (CSS:<~> (<css:integer>) mox-1000ths-percentage))
 
-(define-css-disjoint-filter <mox+percentage> #:-> CSS+%
-  #:with [[css->racket : (-> Natural CSS+%) mox+1000ths-percentage]]
+(define-css-disjoint-filter <mox+percentage> #:-> Nonnegative-FlPercentage
+  #:with [[css->racket : (-> Natural Nonnegative-FlPercentage) mox+1000ths-percentage]]
   (<css+percentage>)
   (CSS:<~> (<css:integer> nonnegative-fixnum?) css->racket))
 
@@ -189,7 +190,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (<:mox-region:>) : (CSS-Parser (Listof CSS-Region))
-  (<:css-region:> (CSS:<~> (<mox-percentage>) #%dim-value)))
+  (<:css-region:> (CSS:<~> (<mox-percentage>)
+                           (inst #%dim-value Flonum))))
 
 (define (<:mox-line-dash:>) : (CSS-Parser (Listof MOX-Line-Dash-Datum))
   (CSS<+> (CSS:<^> (<css-keyword> mox-preset-dash-names))
@@ -211,13 +213,13 @@
                       number))])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define mox-1000ths-percentage : (-> Integer CSS-%)
+(define mox-1000ths-percentage : (-> Integer FlPercentage)
   (lambda [v]
-    (#%per (* (exact->inexact v) 0.00001))))
+    (#%per (* (exact->inexact v) 0.00001) '%)))
 
-(define mox+1000ths-percentage : (-> Natural CSS+%)
+(define mox+1000ths-percentage : (-> Natural Nonnegative-FlPercentage)
   (lambda [v]
-    (#%per (* (real->double-flonum v) 0.00001))))
+    (#%per (* (real->double-flonum v) 0.00001) '%)))
 
 (define mox-angle : (case-> [Natural -> Nonnegative-Flonum]
                             [Integer -> Flonum])
@@ -228,7 +230,7 @@
   (lambda [v]
     (dim:length (real->double-flonum (/ v 12700)) 'pt css-dimenv)))
 
-(define mox-line-dash-stop : (-> (Listof CSS+%) (Pairof Nonnegative-Flonum Nonnegative-Flonum))
+(define mox-line-dash-stop : (-> (Listof Nonnegative-FlPercentage) (Pairof Nonnegative-Flonum Nonnegative-Flonum))
   (lambda [da]
     (cond [(and (pair? da) (pair? (cdr da)))
            (cons (#%dim-value (car da))
@@ -274,7 +276,7 @@
   (lambda [v]
     (and (pair? v)
          (mox-fill-style? (car v))
-         ((inst listof? CSS-%) (cdr v) #%per?))))
+         ((inst listof? FlPercentage) (cdr v) flpercentage?))))
 
 (define mox-linear-color-stop-list? : (-> Any Boolean : MOX-Linear-Color-Stops)
   (lambda [cs]

@@ -2,10 +2,12 @@
 
 (provide (all-defined-out))
 (provide (all-from-out sgml/digitama/xexpr/datatype))
+(provide (all-from-out sgml/digitama/shared/datatype))
 (provide (rename-out [xml:attr-value->string mox:attr-value->lang]
                      [xml:attr-value->symbol mox:attr-value->relationship-id]))
 
 (require sgml/digitama/xexpr/datatype)
+(require sgml/digitama/shared/datatype)
 
 (require digimon/dimension)
 

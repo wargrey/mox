@@ -5,6 +5,8 @@
                      [xml:attr-value->index xml:attr-value->style-matrix-column-index]
                      [xml:attr-value->index xml:attr-value+>coordinate32]))
 
+(require sgml/digitama/shared/datatype)
+
 (require "../../../dialect.rkt")
 (require "../../../shared/ml/common-simple-types.rkt")
 

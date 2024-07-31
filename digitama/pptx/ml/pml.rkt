@@ -9,6 +9,8 @@
 
 (require "extension.rkt")
 
+(require digimon/dimension)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type PPTX-Background (U PPTX:Background-Property MOX:Style-Matrix-Reference))
 (define-type PPTX-Shape (U PPTX:Shape PPTX:Group-Shape PPTX:Picture
