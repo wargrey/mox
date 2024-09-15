@@ -15,7 +15,7 @@
 (require "../package/standards.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define opc-word-properties-markup-entries : (->* (String (Option String) MOX-NameList (Option String) (Option String) (Listof Any))
+(define opc-word-properties-markup-entries : (->* (String (Option String) MOX-NameList String String (Listof Any))
                                                   (#:utc Integer)
                                                   (Listof (Pairof Symbol Archive-Entry)))
   (lambda [part-name-fmt ?title authors version timestamp properties #:utc [ts #false]]
