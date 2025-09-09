@@ -24,7 +24,7 @@
     (let sift-property ([properties : (Listof Any) ps]
                         [doc-id : String (symbol->immutable-string id)]
                         [doc-version : String ""]
-                        [doc-date : String (strftime #:locale? #false)]
+                        [doc-date : String (strftime)]
                         [srehto : (Listof Any) null])
       (cond [(null? properties) (values (reverse srehto) doc-id doc-version doc-date)]
             [else (let-values ([(self rest) (values (car properties) (cdr properties))])
