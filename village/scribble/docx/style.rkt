@@ -10,7 +10,7 @@
 (define opc-word-style-markup-entry : (->* (String) (#:utc Integer) Archive-Entry)
   (lambda [part-name #:utc [ts #false]]
     (make-archive-file-entry #:ascii? #true #:comment "Fundamentals 11.3.12, 2006"
-                             (collection-file-path "default.xml" "mox" "stone" "docx" "style")
+                             (collection-file-path "styles.xml" "mox" "stone" "docx" "style")
                              (opc-part-name-normalize/zip part-name))))
 
 (define opc-word-theme-markup-entry : (->* (String) (#:utc Integer) Archive-Entry)

@@ -15,4 +15,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define read-docx-package : (-> MOX-Stdin MOX-Word-Package)
   (lambda [/dev/stdin]
-    (mox-input-package /dev/stdin moxml-word-agent)))
+    (mox-input-package /dev/stdin moxml-word-agent 'full)))
+
+(define read-docx-package-for-template : (-> MOX-Stdin MOX-Word-Package)
+  (lambda [/dev/stdin]
+    (mox-input-package /dev/stdin moxml-word-agent 'template)))

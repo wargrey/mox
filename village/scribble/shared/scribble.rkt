@@ -5,7 +5,7 @@
 (require racket/symbol)
 (require racket/string)
 
-(require "typed/scribble.rkt")
+(require digimon/scribble)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define scribble-style->values : (-> Element-Style (Values Style-Name Style-Properties))

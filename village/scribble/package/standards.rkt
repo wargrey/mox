@@ -7,6 +7,7 @@
 (require digimon/iana)
 
 (require racket/symbol)
+(require racket/case)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define opc-xmlns : (-> Symbol (Option String))
@@ -64,7 +65,7 @@
 (define opc-relationship-type : (-> (U String Symbol) String)
   (lambda [type]
     (cond [(string? type) type]
-          [else (case type ; should be consistent with those in `opc-override-type-name`
+          [else (case/eq type ; should be consistent with those in `opc-override-type-name`
                   [(App)             "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties"]
                   [(Core)            "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties"]
                   [(Thumbnail)       "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail"]

@@ -1,15 +1,13 @@
 #lang typed/racket/base
 
 (provide (all-defined-out))
-(provide (all-from-out "../docx.rkt"))
-(provide (all-from-out "../xlsx.rkt"))
-(provide (all-from-out "../pptx.rkt"))
 (provide (all-from-out sgml/xexpr))
+(provide (all-from-out mox/docx mox/xlsx mox/pptx))
 (provide (all-from-out racket/logging racket/file racket/path racket/port racket/pretty))
 
-(require "../docx.rkt")
-(require "../xlsx.rkt")
-(require "../pptx.rkt")
+(require mox/docx)
+(require mox/xlsx)
+(require mox/pptx)
 
 (require racket/logging)
 (require racket/file)

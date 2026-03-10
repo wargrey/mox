@@ -120,13 +120,13 @@
                          [(application/vnd.openxmlformats-package.types+xml)
                           (load-xml-datum /dev/pkgin (make-types-sax-handler &types-xmlns extensions parts))]
                          [(application/vnd.openxmlformats-package.relationships+xml)
-                          (if (string=? entry "_rels/.rels")
-                              (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships))
+                          (if (not (string=? entry "_rels/.rels"))
                               (let ([&xmlns : (Boxof String) (box "")]
                                     [rels : (HashTable Symbol MOX-Relationship) (make-hasheq)]
                                     [pentry : String (regexp-replace* #px"[_.]rels($|[/])" entry "")])
                                 (load-xml-datum /dev/pkgin (make-relationships-sax-handler &xmlns rels))
-                                (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels))))]
+                                (hash-set! part-relationships pentry (mox-relationships (unbox &xmlns) rels)))
+                              (load-xml-datum /dev/pkgin (make-relationships-sax-handler &rels-xmlns relationships)))]
                          [else ; might use them later
                           (hash-set! orphans entry
                                      (let ([ooxml::// (format "~a:///~a" ooxml entry)]

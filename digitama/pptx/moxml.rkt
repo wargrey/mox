@@ -2,6 +2,7 @@
 
 (provide (all-defined-out))
 
+(require racket/case)
 (require sgml/xml)
 
 (require "../moxml.rkt")
@@ -52,7 +53,7 @@
     (values pptx-name
 
             (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
-              (case type
+              (case/eq type
                 [(application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.slideshow.main+xml
                   application/vnd.openxmlformats-officedocument.presentationml.template.main+xml)

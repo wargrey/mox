@@ -11,6 +11,7 @@
 (define test-omit-paths 'all)
 
 (define raco-commands '(["devimon" mox/digivice/devimon "translate Scribble into MS Office documents" #false]))
+(define wisemon-phony '("village/wisemon/phony"))
 
 (define scribblings '(["tamer/mox.scrbl" (main-doc multi-page) (parsing-library)]))
 

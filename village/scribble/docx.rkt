@@ -8,19 +8,17 @@
 (require racket/list)
 (require racket/format)
 
-(require file/convertible)
-
 (require digimon/archive)
-(require digimon/dtrace)
+(require file/convertible)
 
 (require "docx/metainfo.rkt")
 (require "docx/app.rkt")
 (require "docx/style.rkt")
 (require "docx/misc.rkt")
-(require "docx/datatype.rkt")
 
 (require "docx/story/document.rkt")
 
+(require "shared/dtrace.rkt")
 (require "shared/render.rkt")
 (require "shared/scribble.rkt")
 
@@ -32,7 +30,7 @@
 
 (define (render-mixin %)
   (class % (super-new)
-    (inherit-field style-file style-extra-files)
+    (inherit-field style-file #;style-extra-files)
     (inherit render-part render-flow render-block)
     (inherit format-number number-depth install-file)
     (inherit extract-part-style-files link-render-style-at-element)
@@ -56,21 +54,22 @@
       (define plain-title (and title/raw (content->string title/raw)))
       (define-values (clean-properties doc-id doc-version doc-date) (mox-sift-property 'wargrey (style-properties (part-style p))))
 
-      (start-render)
+      (start-render!)
       
-      (let ([docblocks (render-part p ri)]
-            [main-part  (mox-story-part doc-id 'document.xml)]
-            [style-part (mox-story-part doc-id 'styles.xml)]
-            [font-part (mox-story-part doc-id 'fontTable.xml)]
-            [theme-part (mox-story-part doc-id 'theme.xml)]
-            [footnote-part (mox-story-part doc-id 'footnotes.xml)]
-            [endnote-part (mox-story-part doc-id 'endnotes.xml)]
-            [settings-part (mox-story-part doc-id 'settings.xml)]
-            [websettings-part (mox-story-part doc-id 'webSettings.xml)]
-            [docProps (opc-word-properties-markup-entries "/~a" plain-title (reverse (unbox &authors)) doc-version doc-date clean-properties)])
+      (let* ([docblocks (render-part p ri)]
+             [main-part  (mox-story-part 'word doc-id 'document.xml)]
+             [style-part (mox-story-part 'word doc-id 'styles.xml)]
+             [theme-part (mox-story-part 'word doc-id 'theme.xml)]
+             [font-part (mox-story-part 'word doc-id 'fontTable.xml)]
+             [footnote-part (mox-story-part 'word doc-id 'footnotes.xml)]
+             [endnote-part (mox-story-part 'word doc-id 'endnotes.xml)]
+             [settings-part (mox-story-part 'word doc-id 'settings.xml)]
+             [websettings-part (mox-story-part 'word doc-id 'webSettings.xml)]
+             [docProps (opc-word-properties-markup-entries "/~a" plain-title (reverse (unbox &authors)) doc-version doc-date clean-properties)]
+             [options (list font-part footnote-part endnote-part settings-part websettings-part)])
         (zip-create (current-output-port)
                     (list (opc-content-types-markup-entry
-                           (append (list main-part style-part font-part theme-part footnote-part endnote-part settings-part websettings-part)
+                           (append (list* main-part style-part theme-part options)
                                    (for/list ([type.entry (in-list docProps)])
                                      (cons (string-append "/" (archive-entry-name (cdr type.entry)))
                                            (car type.entry)))))
@@ -85,13 +84,11 @@
                           (opc-relationships-markup-entry
                            (car main-part) ; document.xml relationship
                            (map opc-make-internal-relationship
-                                (list style-part theme-part font-part
-                                      footnote-part endnote-part
-                                      settings-part websettings-part)))
+                                (list* style-part theme-part options)))
                           (opc-word-document-markup-entry (car main-part) docblocks)
                           (opc-word-style-markup-entry (car style-part))
                           (opc-word-theme-markup-entry (car theme-part))
-                          (opc-word-font-markup-entry (car font-part))
+                          (opc-word-font-table-markup-entry (car font-part))
                           (opc-word-footnote-markup-entry (car footnote-part))
                           (opc-word-endnote-markup-entry (car endnote-part))
                           (opc-word-settings-markup-entry (car settings-part))
@@ -105,12 +102,12 @@
       (define-values (sn sp) (scribble-style->values (part-style p)))
 
       (if (null? numseqs)
-          (dtrace-debug #:topic docx-render-mode "§[~a]: ~a" depth (content->string c))
-          (dtrace-debug #:topic docx-render-mode "§~a. ~a" (car numseqs) (content->string c)))
+          (mox-debug "§[~a]: ~a" depth (content->string c))
+          (mox-debug "§~a. ~a" (car numseqs) (content->string c)))
       
       (cons (word-section sn sp (if (not c) null (render-content c p ri))
                           (current-tag-prefixes) (link-render-style-mode (current-link-render-style))
-                          numseqs (number-depth number))
+                          numseqs depth)
 
             (apply append
                    (render-flow (part-blocks p) p ri #f)
@@ -191,8 +188,8 @@
                 (for/fold ([indent? indent?]) ([sub-row (in-list row*)])
                   
                   (for/fold ([space? #f])
-                      ([col (in-list sub-row)]
-                       [w (in-list widths)])
+                            ([col (in-list sub-row)]
+                             [w (in-list widths)])
                     (let ([col (if (eq? col 'cont) "" col)])
                       (display (regexp-replace* #rx"\uA0" col " "))
                       (display (make-string (max 0 (- w (string-length col))) #\space)))
@@ -284,30 +281,34 @@
 
     (define/override (table-of-contents part ri)
       (define t (super table-of-contents part ri))
-      (cond
-        [(current-docx-link-sections)
-         ;; Table generated by `table-of-contents` always has one
-         ;; column, and each row has one paragraph that starts
-         ;; with a 'hspace element to indent
-         (nested-flow
-          (style 'table-of-contents null)
-          (for/list ([p (map car (table-blockss t))])
-            (define c (paragraph-content p))
-            (define keep-c (cdr c))
-            (define (spaces->depth n)
-              (add1 (quotient (- n 4) 2)))
-            (for/fold ([p (paragraph plain keep-c)]) ([s (in-range
-                                                          (spaces->depth
-                                                           (string-length (car (element-content (car c))))))])
-              (nested-flow (style "refcontent" null) (list p)))))]
-        [else t]))
+      (cond [(current-docx-link-sections)
+             ;; Table generated by `table-of-contents` always has one
+             ;; column, and each row has one paragraph that starts
+             ;; with a 'hspace element to indent
+             (nested-flow (style 'table-of-contents null)
+                          (for/list ([p (map car (table-blockss t))])
+                            (define c (paragraph-content p))
+                            (for/fold ([p (paragraph plain (cdr c))])
+                                      ([s (in-range (spaces->depth (string-length (car (element-content (car c))))))])
+                              (nested-flow (style "refcontent" null) (list p)))))]
+            [else t]))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     (define &authors (box null))
+    (define &n (box 0))
 
-    (define (start-render)
+    (define (spaces->depth n)
+      (add1 (quotient (- n 4) 2)))
+
+    (define (start-render!)
       (set-box! &authors null)
-      (datatype-reset!))
+      (set-box! &n 0))
+
+    (define (st-decimal-number [n0 #false])
+      (define n (or n0 (add1 (unbox &n))))
+    
+      (set-box! &n n)
+      n)
     
     (define (render-text t part ri)
       (list (cond [(string? t) t]

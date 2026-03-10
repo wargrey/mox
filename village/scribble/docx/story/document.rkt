@@ -3,32 +3,31 @@
 (provide (all-defined-out))
 
 (require racket/symbol)
-(require racket/string)
+(require racket/case)
 
 (require digimon/archive)
 (require digimon/format)
-(require digimon/dtrace)
+(require digimon/scribble)
 
 (require sgml/xexpr)
-
-(require "../../shared/typed/scribble.rkt")
 
 (require "../../package/partname.rkt")
 (require "../../package/standards.rkt")
 (require "../../package/xmlns.rkt")
+(require "../../shared/dtrace.rkt")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type Word-Run-Content (U Word-Run Word-Annotation String))
 
-(struct word-style
-  ([name : Style-Name]
+(struct word-object
+  ([style-name : Style-Name]
    [properties : Style-Properties])
-  #:type-name Word-Style
+  #:type-name Word-Object
   #:transparent)
 
-(struct Word-Block word-style ())
-(struct Word-Run word-style ())
-(struct Word-Annotation word-style ())
+(struct Word-Block word-object ())
+(struct Word-Run word-object ())
+(struct Word-Annotation word-object ())
 
 (struct word-bookmark Word-Annotation
   ([id : Integer]
@@ -117,27 +116,27 @@
 (define word-block->xexpr : (->* (Word-Block) (Natural) (Listof XExpr))
   (lambda [db [indent 0]]
     (cond [(word-section? db) (list (word-section->xexpr db))]
-          [(word-paragraph? db) (list (word-paragraph->xexpr (word-paragraph-content db) (word-style-name db) (word-style-properties db)))]
+          [(word-paragraph? db) (list (word-paragraph->xexpr (word-paragraph-content db) (word-object-style-name db) (word-object-properties db)))]
           [(word-list? db)
            (apply append
                   (for/list : (Listof (Listof XExpr)) ([item (in-list (word-list-items db))])
                     (cond [(word-paragraph? item)
-                           (list (word-paragraph->xexpr (word-paragraph-content item) "ListParagraph" (word-style-properties item)
-                                                        (list (word-list-paragraph-style-xexpr (word-style-name item) indent))))]
+                           (list (word-paragraph->xexpr (word-paragraph-content item) "ListParagraph" (word-object-properties item)
+                                                        (list (word-list-paragraph-style-xexpr (word-object-style-name item) indent))))]
                           [(word-list? item) (word-block->xexpr item (+ indent 1))]
                           [else (word-block->xexpr item indent)])))]
           [(word-nested-flow? db)
            (apply append
                   (for/list : (Listof (Listof XExpr)) ([block (in-list (word-nested-flow-blocks db))])
                     (cond [(word-paragraph? block)
-                           (list (word-nested-paragraph->xexpr (word-paragraph-content block) (word-style-name db) (word-style-properties db)))]
+                           (list (word-nested-paragraph->xexpr (word-paragraph-content block) (word-object-style-name db) (word-object-properties db)))]
                           [(word-nested-flow? block) (word-block->xexpr block (+ indent 1))]
                           [else (word-block->xexpr block indent)])))]
           [else (list (list 'w:p null (list (word-run/unrecognized db))))])))
 
 (define word-section->xexpr : (-> Word-Section XExpr)
   (lambda [s]
-    (define sname (word-style-name s))
+    (define sname (word-object-style-name s))
     (define depth (word-section-depth s))
     (define numseqs (word-section-numseqs s))
     (define content (word-paragraph-content s))
@@ -149,7 +148,7 @@
 
     (word-paragraph->xexpr (cond [(null? numseqs) content]
                                  [else (list* (car numseqs) ". " content)])
-                           p:style (word-style-properties s))))
+                           p:style (word-object-properties s))))
 
 (define word-paragraph->xexpr : (->* ((Listof Word-Run-Content)) (Style-Name Style-Properties (Listof XExpr)) XExpr)
   (lambda [pc [style #false] [properties null] [additions null]]
@@ -180,26 +179,22 @@
   (lambda [style indent]
     (define w:border : (Listof XExpr)
       (list (list 'w:pBdr null
-                              '((w:top ([w:val . "single"]
-                                        [w:sz . "12"]
-                                        [w:space . "1"]
-                                        [w:color . "FF0000"]))
-                                (w:bottom ([w:val . "single"]
-                                           [w:sz . "12"]
-                                           [w:space . "1"]
-                                           [w:color . "FF0000"]))
-                                (w:left ([w:val . "single"]
-                                         [w:sz . "12"]
-                                         [w:space . "4"]
-                                         [w:color . "FF0000"]))
-                                (w:right ([w:val . "single"]
-                                          [w:sz . "12"]
-                                          [w:space . "4"]
-                                          [w:color . "FF0000"]))
-                                (w:between ([w:val . "single"]
-                                            [w:sz . "24"]
-                                            [w:space . "4"]
-                                            [w:color . "4D5D2C"]))))))
+                  '((w:top ([w:val . "single"]
+                            [w:sz . "12"]
+                            [w:space . "1"]
+                            [w:color . "FF0000"]))
+                    (w:bottom ([w:val . "single"]
+                               [w:sz . "12"]
+                               [w:space . "1"]
+                               [w:color . "FF0000"]))
+                    (w:left ([w:val . "single"]
+                             [w:sz . "12"]
+                             [w:space . "4"]
+                             [w:color . "FF0000"]))
+                    (w:right ([w:val . "single"]
+                              [w:sz . "12"]
+                              [w:space . "4"]
+                              [w:color . "FF0000"]))))))
 
     (define w:position : (Listof XExpr)
       (case style
@@ -219,9 +214,9 @@
     (cond [(string? r)
            (list (word-contents->run r))]
           [(word-run-text? r)
-           (list (word-contents->run (word-run-text-content r) (word-style-name r) (word-style-properties r)))]
+           (list (word-contents->run (word-run-text-content r) (word-object-style-name r) (word-object-properties r)))]
           [(word-run-texts? r)
-           (list (word-contents->run (word-run-texts-contents r) (word-style-name r) (word-style-properties r)))]
+           (list (word-contents->run (word-run-texts-contents r) (word-object-style-name r) (word-object-properties r)))]
           [(word-hyperlink? r) (word-hyperlink->field r)]
           [else (list (word-run/unrecognized r))])))
 
@@ -237,13 +232,14 @@
   (lambda [style properties]
     (cond [(string? style)
            `(w:rPr () ((w:rStyle ([w:val . ,style]))))]
-          [(not style) #false]
-          [else (case style
-                  [(italic)      `(w:rPr () ((w:i)))]
-                  [(bold)        `(w:rPr () ((w:b)))]
-                  [(subscript)   `(w:rPr () ((w:vertAlign ([w:val . "subscript"]))))]
-                  [(superscript) `(w:rPr () ((w:vertAlign ([w:val . "superscript"]))))]
-                  [else #false])])))
+          [(and style)
+           (case/eq style
+             [(italic)      `(w:rPr () ((w:i)))]
+             [(bold)        `(w:rPr () ((w:b)))]
+             [(subscript)   `(w:rPr () ((w:vertAlign ([w:val . "subscript"]))))]
+             [(superscript) `(w:rPr () ((w:vertAlign ([w:val . "superscript"]))))]
+             [else #false])]
+          [else #false])))
 
 (define word-hyperlink->field : (-> Word-Hyperlink (Listof XExpr))
   (lambda [hl]
@@ -257,7 +253,7 @@
   (lambda [hl]
     (define tag (word-hyperlink-tag hl))
     (define anchor (cdr tag))
-    (define ?tooltip (findf hover-property? (word-style-properties hl)))
+    (define ?tooltip (findf hover-property? (word-object-properties hl)))
     
     (list 'w:hyperlink `([w:anchor . ,anchor]
                          [w:history . "true"]

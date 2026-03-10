@@ -2,6 +2,7 @@
 
 (provide (all-defined-out))
 
+(require racket/case)
 (require sgml/xml)
 
 (require "../moxml.rkt")
@@ -41,7 +42,7 @@
     (values docx-name
 
             (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
-              (case type
+              (case/eq type
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml)
                  (main-unzip entry type /dev/pkgin)]
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml)
@@ -67,6 +68,10 @@
               (mox-word (or (main-realize) empty-document) (glos-realize)
                         (unbox &header) (unbox &footer))))))
 
+(define moxml-word-agent-for-template : (MOXML-Agentof MOX-Word)
+  (lambda [pkg-type]
+    (moxml-word-agent pkg-type)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define moxml-document-agent : (-> (Values MOXML-Unzip (MOXML-Realize (Option Word-Document))))
   (lambda []
@@ -82,7 +87,7 @@
     (define &endnotes : (Boxof (Option XML-Document)) (box #false))
     
     (values (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
-              (case type
+              (case/eq type
                 [(application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml
                   application/vnd.openxmlformats-officedocument.wordprocessingml.document.glossary+xml)
                  (set-box! &doc (xml-document-normalize (read-xml-document /dev/pkgin)))]

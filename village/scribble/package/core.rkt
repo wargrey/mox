@@ -10,13 +10,16 @@
 (require racket/symbol)
 (require racket/list)
 
-(require sgml/xexpr)
+(require sgml/digitama/xexpr/xexpr)
 
 (require "partname.rkt")
 (require "standards.rkt")
 
+(require "../shared/dtrace.rkt")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-type MOX-NameList (U (Listof String) String))
+(define-type MOX-Property (List Symbol XExpr-AttList (List String)))
 
 (define-configuration mox-metainfo : MOX-Metainfo #:format "default-mox-~a"
   (; /docProps/core.xml
@@ -44,11 +47,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define mox-core-properties-markup-entries : (->* (String MOX-Metainfo String MOX-NameList String String) (#:utc (Option Integer)) Archive-Entry)
-  (lambda [part-name-fmt metainfo title authors version timestamp #:utc [ts #false]]
+  (lambda [part-name-fmt metainfo title authors doc-version timestamp #:utc [ts #false]]
     (define dcterms-attlist : XExpr-AttList
       `([xsi:type . "dcterms:W3CDTF"]))
-    
-    (define cores : (Listof (Option XExpr))
+
+    (define dirty-properties : (Listof (Option MOX-Property))
       (list (select-string-value   'dc:title (mox-metainfo-title metainfo) title)
             (select-string-value   'dc:subject (mox-metainfo-subject metainfo))
             (select-namelist-value 'dc:creator (mox-metainfo-authors metainfo) authors)
@@ -64,7 +67,12 @@
             (select-symbol-value   'dc:language (mox-metainfo-language metainfo) (current-tongue))
             (select-string-value   'cp:contentStatus (mox-metainfo-status metainfo))
             (select-string-value   'cp:contentType (mox-metainfo-type metainfo))
-            (select-string-value   'dc:version (mox-metainfo-version metainfo) version)))
+            (select-string-value   'dc:version (mox-metainfo-version metainfo) doc-version)))
+
+    (define properties : (Listof MOX-Property)
+      (for/list ([cp (in-list dirty-properties)] #:when cp)
+        (mox-dtrace 'note "~a: ~a" (car cp) (caaddr cp))
+        cp))
     
     (define core-property.xml : XExpr
       (list 'cp:coreProperties `([xmlns:cp . ,(assert (opc-xmlns 'Core:CP))]
@@ -72,7 +80,7 @@
                                  [xmlns:dcterms . ,(assert (opc-xmlns 'Core:DCTerms))]
                                  [xmlns:dc . ,(assert (opc-xmlns 'Core:DC))]
                                  [xmlns:xsi . ,(assert (opc-xmlns 'Core:XSI))])
-            (filter xexpr? cores)))
+            properties))
 
     (make-archive-ascii-entry #:utc-time ts #:comment "OpenPackagingConventions 10, 2006"
                               (xexpr->bytes core-property.xml #:prolog? #true)
@@ -85,25 +93,27 @@
       (cond [(mox-metainfo? ?info) ?info]
             [else (make-mox-metainfo)]))))
 
-(define mox-shared-application-properties-xexprs : (-> MOX-Metainfo String Any (Listof XExpr))
+(define mox-shared-application-properties-xexprs : (-> MOX-Metainfo String Any (Listof XExpr-Full-Element))
   (lambda [metainfo application appversion]
-    (define apps : (Listof (Option XExpr))
+    (define apps : (Listof (Option MOX-Property))
       (list (select-string-value   'Template (mox-metainfo-template metainfo))
             
             `(Application () (,application))
             '(ScaleCrop () ("false"))
-
+            
             ; TODO: why these two properties don't work
             (select-namelist-value 'Manager (mox-metainfo-manager metainfo))
             (select-string-value   'Company (mox-metainfo-company metainfo))
-
+            
             '(SharedDoc () ("false"))
             `(AppVersion () (,(format "~a" appversion)))))
-    
-    (filter xexpr? apps)))
+
+    (for/list ([ap (in-list apps)] #:when ap)
+      (mox-dtrace 'note "~a: ~a" (car ap) (caaddr ap))
+      ap)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define select-string-value : (->* (Symbol (Option String)) (String #:attlist XExpr-AttList) (Option XExpr))
+(define select-string-value : (->* (Symbol (Option String)) (String #:attlist XExpr-AttList) (Option MOX-Property))
   (lambda [tagname value [alt-value ""] #:attlist [attlist null]]
     (define text : (Option String)
       (or (and value (not (string=? value "")) value)
@@ -112,7 +122,7 @@
     (and text
          `(,tagname ,attlist (,text)))))
 
-(define select-symbol-value : (->* (Symbol (Option Symbol)) (Symbol) (Option XExpr))
+(define select-symbol-value : (->* (Symbol (Option Symbol)) (Symbol) (Option MOX-Property))
   (lambda [tagname value [alt-value '||]]
     (define s : (Option Symbol)
       (or (and value (not (eq? value '||)) value)
@@ -122,13 +132,13 @@
          `(,tagname ()
                     (,(symbol->immutable-string s))))))
 
-(define select-natural-value : (-> Symbol (Option Natural) (Option XExpr))
+(define select-natural-value : (-> Symbol (Option Natural) (Option MOX-Property))
   (lambda [tagname value]
     (and value
          `(,tagname ()
                     (,(number->string value))))))
 
-(define select-list-value : (->* (Symbol (Option (Listof String))) (Char) (Option XExpr))
+(define select-list-value : (->* (Symbol (Option (Listof String))) (Char) (Option MOX-Property))
   (lambda [tagname value-list [sep #\,]]
     (define text : (Option String)
       (and (pair? value-list)
@@ -137,7 +147,7 @@
     (and text
          `(,tagname () (,text)))))
 
-(define select-namelist-value : (->* (Symbol MOX-NameList) (MOX-NameList) (Option XExpr))
+(define select-namelist-value : (->* (Symbol MOX-NameList) (MOX-NameList) (Option MOX-Property))
   (lambda [tagname names [defined-names null]]
     (define text : (Listof String)
       (remove-duplicates (append (if (list? defined-names) defined-names (list defined-names))

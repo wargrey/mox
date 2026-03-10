@@ -2,6 +2,7 @@
 
 (provide (all-defined-out))
 
+(require racket/case)
 (require sgml/xml)
 
 (require "../moxml.rkt")
@@ -84,7 +85,7 @@
     (values xlsx-name
 
             (λ [[entry : String] [type : Symbol] [/dev/pkgin : Input-Port]] : (Option Void)
-              (case type
+              (case/eq type
                 [(application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml)
                  (set-box! &tables (cons (xml-document-normalize (read-xml-document /dev/pkgin)) (unbox &tables)))]
                 [(application/vnd.openxmlformats-officedocument.drawing+xml)
